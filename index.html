@@ -267,7 +267,7 @@
     <input type="hidden" id="esm-id">
     <div class="field"><label>Customer Name</label><input type="text" id="esm-name" autocomplete="off"></div>
     <div class="field"><label>Payment</label><input type="text" id="esm-pay" autocomplete="off"></div>
-    <div class="field"><label>Bottles Returned</label><input type="number" id="esm-discount" min="0" inputmode="numeric"></div>
+    <div class="field"><label>Bottles Returned (&#x2212;$3 each)</label><input type="number" id="esm-discount" min="0" inputmode="numeric" placeholder="0"></div>
     <div id="esm-items-wrap"></div>
     <button class="modal-save" onclick="saveSaleEdit()">Save Changes</button>
   </div>
@@ -320,7 +320,8 @@
       const r = sku.sold*sku.price; gross += r;
       return `<div class="rev-row"><span class="n">${esc(sku.name)}</span><span class="a">$${r}</span></div>`;
     }).join('');
-    document.getElementById('total-rev').textContent = '$' + gross;
+    const totalDisc = state.sales.reduce((a,s)=>a+(s.discount||0),0);
+    document.getElementById('total-rev').textContent = '$' + (gross - totalDisc);
   }
 
   /* ── SKU MODAL ── */
@@ -523,10 +524,11 @@
     if (!state.sales.length) { list.innerHTML='<div class="empty-state">No sales yet.</div>'; return; }
     list.innerHTML = state.sales.map(s => {
       const lines = s.items.map(i=>`<div class="sc-item-line"><b>${esc(i.skuName)}</b> \xd7${i.qty} &mdash; $${i.price*i.qty}</div>`).join('');
-      const discTag = s.discount>0?`<span class="tag tdisc">${Math.round(s.discount/3)} returned</span>`:'';
+      const bottles = s.discount>0 ? Math.round(s.discount/3) : 0;
+      const discTag = bottles>0?`<span class="tag tdisc">${bottles} bottle${bottles>1?'s':''} returned</span>`:'';
       const tot = Number.isInteger(s.total)?s.total:s.total.toFixed(2);
       return `<div class="sale-card">
-        <div class="sc-top"><div class="sc-name">${esc(s.name)}</div><div class="sc-amt">$${tot}</div></div>
+        <div class="sc-top"><div class="sc-name">${esc(s.name)}</div><div class="sc-amt">$${tot}${s.discount>0?'<span style="font-size:10px;color:var(--blue);display:block;font-weight:700;text-align:right;">\u2212$'+s.discount+' ('+Math.round(s.discount/3)+' returned)</span>':''}</div></div>
         <div class="sc-items">${lines}</div>
         <div class="sc-bot">
           <div class="sc-tags">
@@ -560,7 +562,7 @@
     document.getElementById('esm-id').value = id;
     document.getElementById('esm-name').value = s.name;
     document.getElementById('esm-pay').value = s.pay;
-    document.getElementById('esm-discount').value = s.discount||0;
+    document.getElementById('esm-discount').value = s.discount>0 ? Math.round(s.discount/3) : 0;
     document.getElementById('esm-items-wrap').innerHTML = s.items.map((item,idx)=>`
       <div class="field"><label>${esc(item.skuName)} qty</label>
       <input type="number" id="esm-qty-${idx}" value="${item.qty}" min="1" inputmode="numeric"></div>`).join('');
