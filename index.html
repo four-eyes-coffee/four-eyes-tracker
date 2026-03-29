@@ -457,12 +457,16 @@
   }
 
   function updateOrderTotal() {
+    if (formPay === 'Gift') {
+      document.getElementById('order-total').textContent = '$0';
+      return;
+    }
     const disc = formReturns * 3;
     const subtotal = cart.reduce((sum,item) => {
       const sku = state.skus.find(s=>s.id===item.skuId);
       return sum + (sku ? sku.price*item.qty : 0);
     }, 0);
-    const total = Math.max(0, subtotal - disc);
+    const total = formPay === 'Gift' ? 0 : Math.max(0, subtotal - disc);
     const fmt = Number.isInteger(total) ? total : total.toFixed(2);
     document.getElementById('order-total').textContent = '$' + fmt;
   }
@@ -471,6 +475,7 @@
     formPay = method;
     document.querySelectorAll('.pay-pill').forEach(p=>p.classList.remove('selected'));
     el.classList.add('selected');
+    updateOrderTotal();
   }
 
   function logSale() {
@@ -483,7 +488,7 @@
       const sku = state.skus.find(s=>s.id===item.skuId);
       return sum + (sku ? sku.price*item.qty : 0);
     }, 0);
-    const total = Math.max(0, subtotal - disc);
+    const total = formPay === 'Gift' ? 0 : Math.max(0, subtotal - disc);
     cart.forEach(item => {
       const sku = state.skus.find(s=>s.id===item.skuId);
       if (sku) sku.sold += item.qty;
@@ -532,7 +537,7 @@
         <div class="sc-items">${lines}</div>
         <div class="sc-bot">
           <div class="sc-tags">
-            <span class="tag tpay">${s.pay}</span>
+            <span class="tag tpay" style="${s.pay==='Gift'?'background:rgba(230,255,0,0.15);color:var(--yellow);':''}">${s.pay}</span>
             ${discTag}
             <span class="tag ttime">${s.time}</span>
           </div>
