@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Four Eyes">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   :root { --black:#000; --white:#fff; --blue:#2033ff; --yellow:#e6ff00; --card:#111; --border:rgba(255,255,255,0.12); --muted:rgba(255,255,255,0.35); }
@@ -161,6 +162,16 @@
   .modal-save { width:100%; padding:13px; background:var(--yellow); color:var(--black); border:none; border-radius:3px; font-family:'Rubik',sans-serif; font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase; cursor:pointer; margin-top:6px; }
   .modal-del { width:100%; padding:11px; background:transparent; border:2px solid rgba(255,255,255,0.1); border-radius:3px; font-family:'Rubik',sans-serif; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); cursor:pointer; margin-top:8px; }
   .modal-del:active { border-color:var(--yellow); color:var(--yellow); }
+  .pending-card { background:var(--card); border:1.5px solid var(--border); border-left:3px solid var(--yellow); border-radius:3px; padding:13px 14px; margin-bottom:8px; }
+  .pending-card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+  .pending-name { font-size:14px; font-weight:700; }
+  .pending-window { font-size:10px; color:var(--yellow); font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+  .pending-items { font-size:11px; color:var(--muted); margin-bottom:10px; }
+  .pending-actions { display:flex; gap:8px; }
+  .approve-btn { flex:1; padding:10px; background:var(--yellow); color:var(--black); border:none; border-radius:3px; font-family:'Rubik',sans-serif; font-size:10px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; }
+  .approve-btn:active { opacity:0.8; }
+  .reject-btn { padding:10px 14px; background:transparent; border:1.5px solid var(--border); border-radius:3px; font-family:'Rubik',sans-serif; font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--muted); cursor:pointer; }
+  .reject-btn:active { border-color:var(--yellow); color:var(--yellow); }
 </style>
 </head>
 <body>
@@ -174,6 +185,7 @@
   <button class="tab active" onclick="switchTab('dashboard')">Dashboard</button>
   <button class="tab" onclick="switchTab('newsale')">New Sale</button>
   <button class="tab" onclick="switchTab('history')">History</button>
+  <button class="tab" onclick="switchTab('drops')">Drop</button>
 </div>
 
 <!-- DASHBOARD -->
@@ -195,6 +207,15 @@
 
 <!-- NEW SALE -->
 <div class="panel" id="panel-newsale">
+  <!-- Pending orders queue -->
+  <div id="newsale-pending-wrap" style="margin-bottom:14px;display:none;">
+    <div class="sec-row" style="margin-top:0;margin-bottom:10px;">
+      <span class="sec-label">Pending Orders</span>
+      <span class="hist-count" id="newsale-pending-count">0</span>
+    </div>
+    <div id="newsale-pending-list"></div>
+  </div>
+
   <div class="sale-form" id="sale-form-wrap">
     <div class="fsec">Customer</div>
     <div class="field"><input type="text" id="f-name" placeholder="First name or handle" autocomplete="off"></div>
@@ -260,6 +281,21 @@
   </div>
 </div>
 
+<!-- DROP PANEL -->
+<div class="panel" id="panel-drops">
+  <div class="sec-row"><span class="sec-label">Weekly Drop Code</span></div>
+  <div class="rev-card" style="margin-bottom:14px;">
+    <div class="rev-title">Active Code</div>
+    <div id="active-code-display" style="font-size:28px;font-weight:900;letter-spacing:2px;color:var(--black);margin:8px 0 4px;">—</div>
+    <div id="active-code-expiry" style="font-size:10px;color:rgba(0,0,0,0.45);font-weight:700;letter-spacing:1px;"></div>
+  </div>
+  <button class="submit-btn" style="margin-bottom:10px;" onclick="generateCode()">Generate New Code</button>
+  <button class="reset-btn" onclick="deactivateCode()">Deactivate Current Code</button>
+
+  <div class="sec-row" style="margin-top:20px;"><span class="sec-label">Pending Orders</span><span class="hist-count" id="pending-count">0</span></div>
+  <div id="pending-list"><div class="empty-state">No pending orders.</div></div>
+</div>
+
 <!-- Edit Sale Modal -->
 <div class="modal-overlay" id="sale-modal">
   <div class="modal">
@@ -274,43 +310,114 @@
 </div>
 
 <script>
-  const DEFAULT_SKUS = [
-    { id:1, name:'OG Drip',   stock:22, sold:0, price:18 },
-    { id:2, name:'Peach Plz', stock:8,  sold:0, price:20 }
-  ];
-
-  function loadState() {
-    try {
-      const saved = localStorage.getItem('fec_state');
-      if (saved) return JSON.parse(saved);
-    } catch(e) {}
-    return null;
+  // Supabase
+  const SUPA_URL = 'https://kqmdnrlpfbnnxxtgbrgd.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbWRucmxwZmJubnh4dGdicmdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MzE5MjksImV4cCI6MjA5MDQwNzkyOX0.e6kvqx3PHLkpJJc6PiJ6TmBS9f9f0gk5-r2i_vnx5xQ';
+  let supa;
+  try {
+    supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+  } catch(e) {
+    console.error('Supabase init failed:', e);
   }
 
-  function saveState() {
-    try {
-      localStorage.setItem('fec_state', JSON.stringify(state));
-    } catch(e) {}
-  }
-
-  const savedState = loadState();
-  const state = savedState || {
-    skus: DEFAULT_SKUS,
+  const state = {
+    skus: [],
     sales: [],
-    nextSkuId: 3
+    nextSkuId: 1
   };
-  // ensure nextSkuId is always valid
-  if (!state.nextSkuId) state.nextSkuId = Math.max(...state.skus.map(s=>s.id), 0) + 1;
 
   let cart = [];
   let formPay = null;
 
+  // ── Supabase helpers ──
+  async function loadFromSupabase() {
+    if (!supa) { console.warn('Supabase not ready'); renderDashboard(); renderHistory(); renderSaleForm(); return; }
+    try {
+      const [ skuRes, saleRes ] = await Promise.all([
+        supa.from('skus').select('*').eq('active', true).order('id'),
+        supa.from('orders').select('*, order_items(*)').eq('status','completed').order('created_at', {ascending:false})
+      ]);
+      if (skuRes.error) console.error('SKU load error:', skuRes.error);
+      if (skuRes.data && skuRes.data.length > 0) {
+        state.skus = skuRes.data.map(s => ({
+          id: s.id, name: s.name, stock: s.stock, sold: s.sold, price: parseFloat(s.price)
+        }));
+        state.nextSkuId = Math.max(...state.skus.map(s=>s.id)) + 1;
+      }
+    if (saleRes.data) {
+      state.sales = saleRes.data.map(o => ({
+        id: o.id,
+        name: o.customer_name || '—',
+        items: (o.order_items||[]).map(i=>( { skuId:i.sku_id, skuName:i.sku_name, qty:i.qty, price:parseFloat(i.price) })),
+        pay: o.pay_method,
+        discount: parseFloat(o.discount)||0,
+        total: parseFloat(o.total)||0,
+        time: new Date(o.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),
+        status: o.status
+      }));
+    }
+      renderDashboard(); renderHistory(); renderSaleForm(); loadPendingForNewSale();
+    } catch(e) {
+      console.error('Supabase load error:', e);
+      renderDashboard(); renderHistory(); renderSaleForm();
+    }
+  }
+
+  async function saveSkuToSupabase(sku) {
+    await supa.from('skus').upsert({
+      id: sku.id, name: sku.name, stock: sku.stock, sold: sku.sold, price: sku.price, active: true
+    });
+  }
+
+  async function saveSaleToSupabase(sale) {
+    // Upsert customer
+    let customerId = null;
+    const { data: custData } = await supa.from('customers').select('id').eq('name', sale.name).maybeSingle();
+    if (custData) {
+      customerId = custData.id;
+      await supa.from('customers').update({ total_orders: custData.total_orders ? custData.total_orders+1 : 1 }).eq('id', customerId);
+    } else {
+      const { data: newCust } = await supa.from('customers').insert({ name: sale.name, first_order_at: new Date().toISOString(), total_orders: 1 }).select().single();
+      if (newCust) customerId = newCust.id;
+    }
+    // Insert order
+    const { data: orderData } = await supa.from('orders').insert({
+      customer_id: customerId,
+      customer_name: sale.name,
+      status: 'completed',
+      pay_method: sale.pay,
+      discount: sale.discount,
+      total: sale.total,
+      created_at: new Date().toISOString()
+    }).select().single();
+    if (orderData && sale.items) {
+      await supa.from('order_items').insert(sale.items.map(i => ({
+        order_id: orderData.id, sku_id: i.skuId, sku_name: i.skuName, qty: i.qty, price: i.price
+      })));
+    }
+    // Update sku sold counts
+    for (const item of sale.items) {
+      const sku = state.skus.find(s=>s.id===item.skuId);
+      if (sku) await supa.from('skus').update({ sold: sku.sold }).eq('id', sku.id);
+    }
+  }
+
+  async function deleteSaleFromSupabase(id) {
+    await supa.from('order_items').delete().eq('order_id', id);
+    await supa.from('orders').delete().eq('id', id);
+  }
+
+  function saveState() {
+    try { localStorage.setItem('fec_state', JSON.stringify(state)); } catch(e) {}
+  }
+
   function switchTab(name) {
-    ['dashboard','newsale','history'].forEach((n,i) => {
+    ['dashboard','newsale','history','drops'].forEach((n,i) => {
       document.querySelectorAll('.tab')[i].classList.toggle('active', n===name);
       document.getElementById('panel-'+n).classList.toggle('active', n===name);
     });
-    if (name==='newsale') renderSaleForm();
+    if (name==='newsale') { renderSaleForm(); loadPendingForNewSale(); }
+    if (name==='drops') { loadActiveCode(); loadPendingOrders(); }
   }
 
   /* ── DASHBOARD ── */
@@ -383,7 +490,7 @@
     } else {
       state.skus.push({ id:state.nextSkuId++, name, stock, sold:0, price });
     }
-    saveState(); closeSkuModal(); renderDashboard(); renderSaleForm();
+    saveSkuToSupabase(id ? state.skus.find(s=>s.id===parseInt(id)) : state.skus[state.skus.length-1]); saveState(); closeSkuModal(); renderDashboard(); renderSaleForm();
   }
 
   function deleteSku() {
@@ -393,7 +500,7 @@
     state.sales = state.sales.filter(s => !s.items.some(i=>i.skuId===id));
     state.skus = state.skus.filter(s=>s.id!==id);
     cart = cart.filter(c=>c.skuId!==id);
-    saveState(); closeSkuModal(); renderDashboard(); renderSaleForm(); renderHistory();
+    saveSkuToSupabase(id ? state.skus.find(s=>s.id===parseInt(id)) : state.skus[state.skus.length-1]); saveState(); closeSkuModal(); renderDashboard(); renderSaleForm(); renderHistory();
   }
 
   function closeSkuModal() { document.getElementById('sku-modal').classList.remove('open'); }
@@ -522,7 +629,7 @@
       time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
     };
     state.sales.unshift(sale);
-    saveState(); renderDashboard(); renderHistory();
+    saveState(); saveSaleToSupabase(sale); renderDashboard(); renderHistory();
     document.getElementById('sale-form-wrap').style.display='none';
     document.getElementById('sale-success').classList.add('show');
     document.getElementById('success-name').textContent = name + ' \u2014 $' + (Number.isInteger(total)?total:total.toFixed(2));
@@ -576,8 +683,9 @@
       const sku = state.skus.find(sk=>sk.id===item.skuId);
       if (sku) sku.sold = Math.max(0, sku.sold-item.qty);
     });
+    const delId = state.sales[idx].id;
     state.sales.splice(idx,1);
-    saveState(); renderDashboard(); renderHistory();
+    saveState(); deleteSaleFromSupabase(delId); renderDashboard(); renderHistory();
   }
 
   function openEditSale(id) {
@@ -633,11 +741,175 @@
     saveState(); logAnother(); renderDashboard(); renderHistory();
   }
 
+
+  // ── THEMED CODE GENERATOR ──
+  const CODE_THEMES = {
+    'four_eyes': [
+      ['FIRST·BLOOM','DRAGON·PEARL','OFFBEAT·AURA','HAZE·RISE','OBSERVER','SLOW·DRIP','COLD·SOUL','FOUR·EYES','COFFEE·WITH·SOUL','PATIENCE'],
+    ],
+    'coffee_vibe': [
+      ['SLOW·POUR','COLD·WAVE','DARK·PULL','DEEP·BREW','STILL·STEEP','QUIET·GRIND','DARK·MATTER','SLOW·EXTRACT','COLD·PRESS','DEEP·ROAST'],
+    ],
+    'la_soul': [
+      ['GOLDEN·HOUR','MARINE·LAYER','ECHO·SOUL','SILVER·LAKE','CRENSHAW·WAVE','SUNSET·PULL','EAST·SIDE','HIGHLAND·DRIP','ANGELES·SLOW','PICO·FLOW'],
+    ],
+    'soul_life': [
+      ['QUIET·STORM','STILL·WATER','SLOW·BURN','DEEP·CUTS','INNER·PEACE','SOUL·TIED','GOOD·FEELING','WARM·LIGHT','STEADY·WAVE','ROOT·DOWN'],
+    ]
+  };
+
+  function generateCode() {
+    const themes = Object.keys(CODE_THEMES);
+    const theme = themes[Math.floor(Math.random()*themes.length)];
+    const words = CODE_THEMES[theme][0];
+    const phrase = words[Math.floor(Math.random()*words.length)];
+    const num = String(Math.floor(Math.random()*90)+10);
+    // Random number position: before, middle (between words), or after
+    const parts = phrase.split('·');
+    const pos = Math.floor(Math.random()*3); // 0=before, 1=middle, 2=after
+    let code;
+    if (pos === 0) {
+      code = num + '·' + phrase;
+    } else if (pos === 2) {
+      code = phrase + '·' + num;
+    } else {
+      // middle — insert after first word
+      if (parts.length > 1) {
+        parts.splice(1, 0, num);
+        code = parts.join('·');
+      } else {
+        code = phrase + '·' + num;
+      }
+    }
+    const expires = new Date();
+    expires.setDate(expires.getDate() + 7);
+    saveCodeToSupabase(code, expires.toISOString());
+    showActiveCode(code, expires);
+  }
+
+  function showActiveCode(code, expires) {
+    document.getElementById('active-code-display').textContent = code;
+    const expDate = new Date(expires).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    document.getElementById('active-code-expiry').textContent = 'Expires ' + expDate;
+  }
+
+  async function saveCodeToSupabase(code, expiresAt) {
+    await supa.from('access_codes').update({ active: false }).eq('active', true);
+    await supa.from('access_codes').insert({ code, active: true, expires_at: expiresAt });
+  }
+
+  async function deactivateCode() {
+    await supa.from('access_codes').update({ active: false }).eq('active', true);
+    document.getElementById('active-code-display').textContent = '—';
+    document.getElementById('active-code-expiry').textContent = 'No active code';
+  }
+
+  async function loadActiveCode() {
+    const { data } = await supa.from('access_codes').select('*').eq('active', true).maybeSingle();
+    if (data) showActiveCode(data.code, data.expires_at);
+    else { document.getElementById('active-code-display').textContent = '—'; document.getElementById('active-code-expiry').textContent = 'No active code'; }
+  }
+
+  async function loadPendingOrders() {
+    const { data } = await supa.from('orders').select('*, order_items(*)').eq('status','pending').order('created_at',{ascending:false});
+    const list = document.getElementById('pending-list');
+    document.getElementById('pending-count').textContent = data ? data.length : 0;
+    if (!data || !data.length) { list.innerHTML='<div class="empty-state">No pending orders.</div>'; return; }
+    list.innerHTML = data.map(o => {
+      const lines = (o.order_items||[]).map(i=>`${i.sku_name} ×${i.qty}`).join(', ');
+      return `<div class="pending-card">
+        <div class="pending-card-top">
+          <div class="pending-name">${esc(o.customer_name||'—')}</div>
+          <div class="pending-window">${o.fulfillment_type||''} · ${o.fulfillment_window||''}</div>
+        </div>
+        <div class="pending-items">${lines}</div>
+        <div class="pending-actions">
+          <button class="approve-btn" onclick="approveOrder(${o.id})">Approve</button>
+          <button class="reject-btn" onclick="rejectOrder(${o.id})">Decline</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function approveOrder(id, fromNewSale=false) {
+    // Load the order details
+    const { data: order } = await supa.from('orders').select('*, order_items(*)').eq('id', id).single();
+    if (!order) return;
+    // Pre-fill the New Sale form with order details
+    document.getElementById('f-name').value = order.customer_name || '';
+    cart = [];
+    formPay = order.pay_method || null;
+    (order.order_items||[]).forEach(item => {
+      cart.push({ skuId: item.sku_id, qty: item.qty });
+    });
+    // Mark the order as approved in Supabase
+    await supa.from('orders').update({ status: 'approved' }).eq('id', id);
+    // Refresh pending lists
+    loadPendingOrders();
+    loadPendingForNewSale();
+    // Switch to New Sale tab and render
+    switchTab('newsale');
+    renderSaleForm();
+    // Update pay pill UI
+    if (formPay) {
+      document.querySelectorAll('.pay-pill').forEach(p => {
+        if (p.textContent === formPay) p.classList.add('selected');
+      });
+    }
+  }
+
+  async function rejectOrder(id) {
+    await supa.from('orders').update({ status: 'rejected' }).eq('id', id);
+    loadPendingOrders();
+    loadPendingForNewSale();
+  }
+
+  async function loadPendingForNewSale() {
+    const { data } = await supa.from('orders').select('*, order_items(*)').eq('status','pending').order('created_at',{ascending:false});
+    const list = document.getElementById('newsale-pending-list');
+    const countEl = document.getElementById('newsale-pending-count');
+    if (!data || !data.length) {
+      if (countEl) countEl.textContent = '0';
+      if (list) list.innerHTML = '';
+      document.getElementById('newsale-pending-wrap').style.display = 'none';
+      return;
+    }
+    document.getElementById('newsale-pending-wrap').style.display = 'block';
+    if (countEl) countEl.textContent = data.length;
+    list.innerHTML = data.map(o => {
+      const lines = (o.order_items||[]).map(i=>`${i.sku_name} ×${i.qty}`).join(', ');
+      return `<div class="pending-card">
+        <div class="pending-card-top">
+          <div class="pending-name">${esc(o.customer_name||'—')}</div>
+          <div class="pending-window">${o.fulfillment_type||''} ${o.fulfillment_window ? '· '+o.fulfillment_window : ''}</div>
+        </div>
+        <div class="pending-items">${lines}</div>
+        <div class="pending-actions">
+          <button class="approve-btn" onclick="approveOrder(${o.id}, true)">Fill & Approve</button>
+          <button class="reject-btn" onclick="rejectOrder(${o.id})">Decline</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
   function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   document.getElementById('session-date').textContent =
     new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  renderDashboard(); renderHistory(); renderSaleForm();
+
+  // Show loading state on dashboard while Supabase loads
+  document.getElementById('inv-grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Loading...</div>';
+
+  // Wait for supabase CDN to be ready
+  function waitForSupabase(cb, attempts=0) {
+    if (typeof supabase !== 'undefined') { cb(); }
+    else if (attempts < 20) { setTimeout(() => waitForSupabase(cb, attempts+1), 100); }
+    else { console.warn('Supabase CDN not loaded'); renderDashboard(); renderHistory(); renderSaleForm(); }
+  }
+  waitForSupabase(() => {
+    supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+    loadFromSupabase();
+  });
 </script>
 </body>
 </html>
