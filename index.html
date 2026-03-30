@@ -367,7 +367,7 @@
         status: o.status
       }));
     }
-      renderDashboard(); renderHistory(); renderSaleForm(); loadPendingForNewSale();
+      await renderDashboard(); renderHistory(); renderSaleForm(); loadPendingForNewSale();
     } catch(e) {
       console.error('Supabase load error:', e);
       // Already loaded from localStorage on startup — nothing more to do
@@ -436,7 +436,7 @@
   }
 
   /* ── DASHBOARD ── */
-  function renderDashboard() {
+  async function renderDashboard() {
     document.getElementById('inv-grid').innerHTML = state.skus.map(sku => {
       const rem = sku.stock - sku.sold;
       const pct = sku.stock > 0 ? Math.round((rem/sku.stock)*100) : 0;
