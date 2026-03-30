@@ -325,6 +325,34 @@
   </div>
 </div>
 
+<!-- Pending Order Modal -->
+<div class="modal-overlay" id="pending-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span>Pending Order</span>
+      <button class="modal-close" onclick="closePendingModal()">&#x2715;</button>
+    </div>
+    <input type="hidden" id="pm-id">
+    <div id="pm-customer" style="margin-bottom:14px;">
+      <div style="font-size:16px;font-weight:900;" id="pm-name"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="pm-contact"></div>
+    </div>
+    <div class="field"><label>Payment Method</label>
+      <input type="text" id="pm-pay" placeholder="Cash / Venmo / Zelle..." autocomplete="off">
+    </div>
+    <div class="field"><label>Notes</label>
+      <input type="text" id="pm-notes" placeholder="Optional" autocomplete="off">
+    </div>
+    <div id="pm-items" style="margin-bottom:14px;"></div>
+    <div style="background:rgba(230,255,0,0.08);border:1.5px solid var(--yellow);border-radius:3px;padding:10px 14px;display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;">
+      <span style="font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Total Due</span>
+      <span style="font-size:22px;font-weight:900;color:var(--yellow);" id="pm-total"></span>
+    </div>
+    <button class="modal-confirm" onclick="confirmPendingOrder()">&#x2713; Confirm Sale</button>
+    <button class="modal-del" onclick="declinePendingOrder()">Decline Order</button>
+  </div>
+</div>
+
 <script>
   // Supabase
   const SUPA_URL = 'https://kqmdnrlpfbnnxxtgbrgd.supabase.co';
