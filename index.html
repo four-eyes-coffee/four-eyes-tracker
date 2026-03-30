@@ -274,14 +274,33 @@
 </div>
 
 <script>
-  const state = {
-    skus: [
-      { id:1, name:'OG Drip',   stock:22, sold:0, price:18 },
-      { id:2, name:'Peach Plz', stock:8,  sold:0, price:20 }
-    ],
+  const DEFAULT_SKUS = [
+    { id:1, name:'OG Drip',   stock:22, sold:0, price:18 },
+    { id:2, name:'Peach Plz', stock:8,  sold:0, price:20 }
+  ];
+
+  function loadState() {
+    try {
+      const saved = localStorage.getItem('fec_state');
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return null;
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem('fec_state', JSON.stringify(state));
+    } catch(e) {}
+  }
+
+  const savedState = loadState();
+  const state = savedState || {
+    skus: DEFAULT_SKUS,
     sales: [],
     nextSkuId: 3
   };
+  // ensure nextSkuId is always valid
+  if (!state.nextSkuId) state.nextSkuId = Math.max(...state.skus.map(s=>s.id), 0) + 1;
 
   let cart = [];
   let formPay = null;
@@ -364,7 +383,7 @@
     } else {
       state.skus.push({ id:state.nextSkuId++, name, stock, sold:0, price });
     }
-    closeSkuModal(); renderDashboard(); renderSaleForm();
+    saveState(); closeSkuModal(); renderDashboard(); renderSaleForm();
   }
 
   function deleteSku() {
@@ -374,7 +393,7 @@
     state.sales = state.sales.filter(s => !s.items.some(i=>i.skuId===id));
     state.skus = state.skus.filter(s=>s.id!==id);
     cart = cart.filter(c=>c.skuId!==id);
-    closeSkuModal(); renderDashboard(); renderSaleForm(); renderHistory();
+    saveState(); closeSkuModal(); renderDashboard(); renderSaleForm(); renderHistory();
   }
 
   function closeSkuModal() { document.getElementById('sku-modal').classList.remove('open'); }
@@ -503,7 +522,7 @@
       time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
     };
     state.sales.unshift(sale);
-    renderDashboard(); renderHistory();
+    saveState(); renderDashboard(); renderHistory();
     document.getElementById('sale-form-wrap').style.display='none';
     document.getElementById('sale-success').classList.add('show');
     document.getElementById('success-name').textContent = name + ' \u2014 $' + (Number.isInteger(total)?total:total.toFixed(2));
@@ -558,7 +577,7 @@
       if (sku) sku.sold = Math.max(0, sku.sold-item.qty);
     });
     state.sales.splice(idx,1);
-    renderDashboard(); renderHistory();
+    saveState(); renderDashboard(); renderHistory();
   }
 
   function openEditSale(id) {
@@ -599,7 +618,7 @@
     if (!ok) return;
     const subtotal = s.items.reduce((sum,i)=>sum+(i.price*i.qty),0);
     s.name=name; s.pay=pay; s.discount=disc; s.total=Math.max(0,subtotal-disc);
-    closeSaleModal(); renderDashboard(); renderHistory();
+    saveState(); closeSaleModal(); renderDashboard(); renderHistory();
   }
 
   function closeSaleModal() { document.getElementById('sale-modal').classList.remove('open'); }
@@ -611,7 +630,7 @@
     if (!confirm('Reset session? Clears all sales and inventory counts.')) return;
     state.skus.forEach(s=>s.sold=0);
     state.sales=[];
-    logAnother(); renderDashboard(); renderHistory();
+    saveState(); logAnother(); renderDashboard(); renderHistory();
   }
 
   function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
