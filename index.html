@@ -461,6 +461,8 @@
       const isOut = rem === 0;
       const nc = isOut ? ' out' : isLow ? ' low' : '';
       const bc = isLow ? ' low' : '';
+      const pending = _pendingQty[sku.id]||0;
+      const pendingLine = pending > 0 ? `<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--blue);margin-top:6px;">&#x23F3; ${pending} pending</div>` : '';
       return `<div class="inv-card">
         <button class="inv-edit" onclick="openEditSku(${sku.id})">&#x270E;</button>
         <div class="inv-name">${esc(sku.name)}</div>
@@ -470,6 +472,7 @@
           <div class="inv-right">$${sku.sold*sku.price}<br><b>${sku.sold}</b> sold</div>
         </div>
         <div class="inv-bar"><div class="inv-bar-fill${bc}" style="width:${pct}%"></div></div>
+        ${pendingLine}
       </div>`;
     }).join('');
 
@@ -832,21 +835,20 @@
     const words = CODE_THEMES[theme][0];
     const phrase = words[Math.floor(Math.random()*words.length)];
     const num = String(Math.floor(Math.random()*90)+10);
-    // Random number position: before, middle (between words), or after
-    const parts = phrase.split('·');
+    const parts = phrase.split('-');
     const pos = Math.floor(Math.random()*3); // 0=before, 1=middle, 2=after
     let code;
     if (pos === 0) {
-      code = num + '·' + phrase;
+      code = num + '-' + phrase;
     } else if (pos === 2) {
-      code = phrase + '·' + num;
+      code = phrase + '-' + num;
     } else {
-      // middle — insert after first word
       if (parts.length > 1) {
-        parts.splice(1, 0, num);
+        const mid = Math.floor(parts.length / 2);
+        parts.splice(mid, 0, num);
         code = parts.join('-');
       } else {
-        code = phrase + '·' + num;
+        code = phrase + '-' + num;
       }
     }
     const expires = new Date();
