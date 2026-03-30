@@ -201,8 +201,12 @@
     <div id="rev-rows"></div>
     <hr class="rev-div">
     <div class="rev-total"><span class="l">Net</span><span class="v" id="total-rev">$0</span></div>
+    <div id="rev-gift-line" style="display:none;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.1);"></div>
   </div>
-  <button class="reset-btn" onclick="resetAll()">&#x21BA; Reset Session</button>
+  <div style="display:flex;gap:8px;margin-top:12px;">
+    <button class="reset-btn" style="flex:1;" onclick="resetAll()">&#x21BA; Reset Session</button>
+    <button style="flex:none;padding:12px 16px;background:var(--blue);border:none;border-radius:3px;color:var(--white);font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;" onclick="loadFromSupabase()" title="Refresh data">&#x21BB;</button>
+  </div>
 </div>
 
 <!-- NEW SALE -->
