@@ -209,7 +209,7 @@
     <div class="rev-total"><span class="l">Net</span><span class="v" id="total-rev">$0</span></div>
     <div id="rev-gift-line" style="display:none;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed rgba(0,0,0,0.15);"></div>
   </div>
-  <button style="width:100%;padding:12px 16px;background:var(--blue);border:none;border-radius:3px;color:var(--white);font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-top:12px;font-family:'Rubik',sans-serif;font-weight:700;letter-spacing:2px;text-transform:uppercase;font-size:11px;" onclick="loadFromSupabase()">&#x21BB; Refresh</button>
+  <button style="width:100%;padding:12px 16px;background:var(--blue);border:none;border-radius:3px;color:var(--white);font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-top:12px;font-family:'Rubik',sans-serif;font-weight:700;letter-spacing:2px;text-transform:uppercase;font-size:11px;" onclick="loadFromSupabase();loadPendingCounts();">&#x21BB; Refresh</button>
 </div>
 
 <!-- NEW SALE -->
@@ -355,23 +355,28 @@
         }));
         state.nextSkuId = Math.max(...state.skus.map(s=>s.id)) + 1;
       }
-    if (saleRes.data) {
-      state.sales = saleRes.data.map(o => ({
-        id: o.id,
-        name: o.customer_name || '—',
-        items: (o.order_items||[]).map(i=>( { skuId:i.sku_id, skuName:i.sku_name, qty:i.qty, price:parseFloat(i.price) })),
-        pay: o.pay_method,
-        discount: parseFloat(o.discount)||0,
-        total: parseFloat(o.total)||0,
-        time: new Date(o.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),
-        status: o.status
-      }));
-    }
-      await renderDashboard(); renderHistory(); renderSaleForm(); loadPendingForNewSale();
+      if (saleRes.data) {
+        state.sales = saleRes.data.map(o => ({
+          id: o.id,
+          name: o.customer_name || '—',
+          items: (o.order_items||[]).map(i=>({ skuId:i.sku_id, skuName:i.sku_name, qty:i.qty, price:parseFloat(i.price) })),
+          pay: o.pay_method,
+          discount: parseFloat(o.discount)||0,
+          total: parseFloat(o.total)||0,
+          time: new Date(o.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),
+          status: o.status
+        }));
+      }
+      renderDashboard();
+      renderHistory();
+      renderSaleForm();
+      loadPendingForNewSale();
+      loadPendingCounts();
     } catch(e) {
       console.error('Supabase load error:', e);
-      // Already loaded from localStorage on startup — nothing more to do
-      renderDashboard(); renderHistory(); renderSaleForm();
+      renderDashboard();
+      renderHistory();
+      renderSaleForm();
     }
   }
 
@@ -436,7 +441,19 @@
   }
 
   /* ── DASHBOARD ── */
-  async function renderDashboard() {
+  let _pendingQty = {};
+
+  async function loadPendingCounts() {
+    if (!supa) return;
+    const { data } = await supa.from('orders').select('order_items(sku_id, qty)').eq('status','pending');
+    _pendingQty = {};
+    if (data) data.forEach(o => (o.order_items||[]).forEach(i => {
+      _pendingQty[i.sku_id] = (_pendingQty[i.sku_id]||0) + i.qty;
+    }));
+    renderDashboard();
+  }
+
+  function renderDashboard() {
     document.getElementById('inv-grid').innerHTML = state.skus.map(sku => {
       const rem = sku.stock - sku.sold;
       const pct = sku.stock > 0 ? Math.round((rem/sku.stock)*100) : 0;
@@ -995,6 +1012,7 @@
     closePendingModal();
     loadPendingForNewSale();
     loadPendingOrders();
+    loadPendingCounts();
     renderDashboard();
     renderHistory();
   }
@@ -1006,6 +1024,7 @@
     closePendingModal();
     loadPendingForNewSale();
     loadPendingOrders();
+    loadPendingCounts();
   }
 
   document.getElementById('pending-modal').addEventListener('click', function(e) { if(e.target===this) closePendingModal(); });
