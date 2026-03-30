@@ -450,13 +450,49 @@
       </div>`;
     }).join('');
 
+    // Split paid vs gifted sales
+    const paidSales = state.sales.filter(s => s.pay !== 'Gift');
+    const giftSales = state.sales.filter(s => s.pay === 'Gift');
+
+    // Sum paid revenue per SKU from actual sale records
+    const paidSkuTotals = {};
+    paidSales.forEach(s => {
+      (s.items||[]).forEach(i => {
+        paidSkuTotals[i.skuId] = (paidSkuTotals[i.skuId]||0) + (i.qty * i.price);
+      });
+    });
+
+    // Sum gift qty per SKU
+    const giftSkuQty = {};
+    giftSales.forEach(s => {
+      (s.items||[]).forEach(i => {
+        giftSkuQty[i.skuId] = (giftSkuQty[i.skuId]||0) + i.qty;
+      });
+    });
+
+    // Revenue rows — paid only
     let gross = 0;
     document.getElementById('rev-rows').innerHTML = state.skus.map(sku => {
-      const r = sku.sold*sku.price; gross += r;
+      const r = paidSkuTotals[sku.id]||0;
+      gross += r;
       return `<div class="rev-row"><span class="n">${esc(sku.name)}</span><span class="a">$${r}</span></div>`;
     }).join('');
-    const totalDisc = state.sales.reduce((a,s)=>a+(s.discount||0),0);
-    document.getElementById('total-rev').textContent = '$' + (gross - totalDisc);
+    document.getElementById('total-rev').textContent = '$' + gross;
+
+    // Gift line — only show if gifts exist
+    const totalGiftQty = Object.values(giftSkuQty).reduce((a,b)=>a+b, 0);
+    const giftEl = document.getElementById('rev-gift-line');
+    if (giftEl) {
+      if (totalGiftQty > 0) {
+        const giftVal = state.skus.reduce((sum, sku) => {
+          return sum + (giftSkuQty[sku.id]||0) * sku.price;
+        }, 0);
+        giftEl.style.display = 'flex';
+        giftEl.innerHTML = `<span style="color:rgba(0,0,0,0.55);font-size:11px;font-weight:500;">&#x1F381; ${totalGiftQty} bottle${totalGiftQty>1?'s':''} gifted</span><span style="font-size:11px;font-weight:700;">$${giftVal} value</span>`;
+      } else {
+        giftEl.style.display = 'none';
+      }
+    }
   }
 
   /* ── SKU MODAL ── */
