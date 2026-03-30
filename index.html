@@ -208,18 +208,6 @@
 <!-- NEW SALE -->
 <div class="panel" id="panel-newsale">
 
-  <!-- PENDING ORDERS — always visible -->
-  <div class="sec-row" style="margin-top:0;">
-    <span class="sec-label">Pending Orders</span>
-    <span class="hist-count" id="newsale-pending-count">0</span>
-  </div>
-  <div id="newsale-pending-list">
-    <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:8px 0 12px;">No pending orders</div>
-  </div>
-
-  <!-- DIVIDER -->
-  <div style="border-top:2px solid var(--border);margin:4px 0 18px;"></div>
-
   <!-- SALE ENTRY FORM -->
   <div id="sale-form-wrap">
     <div class="sale-form">
@@ -262,6 +250,16 @@
     <div class="ss" id="success-detail"></div>
     <button class="log-again-btn" onclick="logAnother()">+ Log Another Sale</button>
     <button class="see-history-btn" onclick="switchTab('history')">View History</button>
+  </div>
+
+  <!-- PENDING ORDERS — always at the bottom -->
+  <div style="border-top:1px solid var(--border);margin:24px 0 16px;"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <span class="sec-label">Pending Orders</span>
+    <span class="hist-count" id="newsale-pending-count">0</span>
+  </div>
+  <div id="newsale-pending-list">
+    <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:8px 0;">No pending orders</div>
   </div>
 
 </div>
@@ -323,11 +321,6 @@
   const SUPA_URL = 'https://kqmdnrlpfbnnxxtgbrgd.supabase.co';
   const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbWRucmxwZmJubnh4dGdicmdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MzE5MjksImV4cCI6MjA5MDQwNzkyOX0.e6kvqx3PHLkpJJc6PiJ6TmBS9f9f0gk5-r2i_vnx5xQ';
   let supa;
-  try {
-    supa = supabase.createClient(SUPA_URL, SUPA_KEY);
-  } catch(e) {
-    console.error('Supabase init failed:', e);
-  }
 
   const state = {
     skus: [],
@@ -365,19 +358,10 @@
         status: o.status
       }));
     }
-      // Save to localStorage as backup
-      localStorage.setItem('fec_skus', JSON.stringify(state.skus));
-      localStorage.setItem('fec_sales', JSON.stringify(state.sales));
       renderDashboard(); renderHistory(); renderSaleForm(); loadPendingForNewSale();
     } catch(e) {
       console.error('Supabase load error:', e);
-      // Fall back to localStorage
-      try {
-        const cachedSkus = localStorage.getItem('fec_skus');
-        const cachedSales = localStorage.getItem('fec_sales');
-        if (cachedSkus) state.skus = JSON.parse(cachedSkus);
-        if (cachedSales) state.sales = JSON.parse(cachedSales);
-      } catch(le) {}
+      // Already loaded from localStorage on startup — nothing more to do
       renderDashboard(); renderHistory(); renderSaleForm();
     }
   }
@@ -426,8 +410,11 @@
     await supa.from('orders').delete().eq('id', id);
   }
 
-  function saveState() {
-    try { localStorage.setItem('fec_state', JSON.stringify(state)); } catch(e) {}
+  function saveLocal() {
+    try {
+      localStorage.setItem('fec_skus', JSON.stringify(state.skus));
+      localStorage.setItem('fec_sales', JSON.stringify(state.sales));
+    } catch(e) {}
   }
 
   function switchTab(name) {
@@ -509,7 +496,7 @@
     } else {
       state.skus.push({ id:state.nextSkuId++, name, stock, sold:0, price });
     }
-    saveSkuToSupabase(id ? state.skus.find(s=>s.id===parseInt(id)) : state.skus[state.skus.length-1]); saveState(); closeSkuModal(); renderDashboard(); renderSaleForm();
+    saveSkuToSupabase(id ? state.skus.find(s=>s.id===parseInt(id)) : state.skus[state.skus.length-1]); saveLocal(); closeSkuModal(); renderDashboard(); renderSaleForm();
   }
 
   function deleteSku() {
@@ -519,7 +506,7 @@
     state.sales = state.sales.filter(s => !s.items.some(i=>i.skuId===id));
     state.skus = state.skus.filter(s=>s.id!==id);
     cart = cart.filter(c=>c.skuId!==id);
-    saveSkuToSupabase(id ? state.skus.find(s=>s.id===parseInt(id)) : state.skus[state.skus.length-1]); saveState(); closeSkuModal(); renderDashboard(); renderSaleForm(); renderHistory();
+    saveSkuToSupabase(id ? state.skus.find(s=>s.id===parseInt(id)) : state.skus[state.skus.length-1]); saveLocal(); closeSkuModal(); renderDashboard(); renderSaleForm(); renderHistory();
   }
 
   function closeSkuModal() { document.getElementById('sku-modal').classList.remove('open'); }
@@ -648,8 +635,7 @@
       time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
     };
     state.sales.unshift(sale);
-    localStorage.setItem('fec_sales', JSON.stringify(state.sales));
-    saveState(); saveSaleToSupabase(sale); renderDashboard(); renderHistory();
+    saveLocal(); saveSaleToSupabase(sale); renderDashboard(); renderHistory();
     document.getElementById('sale-form-wrap').style.display='none';
     document.getElementById('sale-success').classList.add('show');
     document.getElementById('success-name').textContent = name + ' \u2014 $' + (Number.isInteger(total)?total:total.toFixed(2));
@@ -705,8 +691,7 @@
     });
     const delId = state.sales[idx].id;
     state.sales.splice(idx,1);
-    localStorage.setItem('fec_sales', JSON.stringify(state.sales));
-    saveState(); deleteSaleFromSupabase(delId); renderDashboard(); renderHistory();
+    saveLocal(); deleteSaleFromSupabase(delId); renderDashboard(); renderHistory();
   }
 
   function openEditSale(id) {
@@ -747,7 +732,7 @@
     if (!ok) return;
     const subtotal = s.items.reduce((sum,i)=>sum+(i.price*i.qty),0);
     s.name=name; s.pay=pay; s.discount=disc; s.total=Math.max(0,subtotal-disc);
-    saveState(); closeSaleModal(); renderDashboard(); renderHistory();
+    saveLocal(); closeSaleModal(); renderDashboard(); renderHistory();
   }
 
   function closeSaleModal() { document.getElementById('sale-modal').classList.remove('open'); }
@@ -759,7 +744,7 @@
     if (!confirm('Reset session? Clears all sales and inventory counts.')) return;
     state.skus.forEach(s=>s.sold=0);
     state.sales=[];
-    saveState(); logAnother(); renderDashboard(); renderHistory();
+    saveLocal(); logAnother(); renderDashboard(); renderHistory();
   }
 
 
@@ -917,17 +902,18 @@
   document.getElementById('session-date').textContent =
     new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 
-  // Load from localStorage immediately so screen isn't blank
+  // Load from localStorage immediately so screen isn't blank while Supabase loads
   try {
     const cachedSkus = localStorage.getItem('fec_skus');
     const cachedSales = localStorage.getItem('fec_sales');
-    if (cachedSkus) { state.skus = JSON.parse(cachedSkus); renderDashboard(); renderSaleForm(); }
-    if (cachedSales) { state.sales = JSON.parse(cachedSales); renderHistory(); }
+    if (cachedSkus) state.skus = JSON.parse(cachedSkus);
+    if (cachedSales) state.sales = JSON.parse(cachedSales);
+    if (state.skus.length || state.sales.length) {
+      renderDashboard(); renderSaleForm(); renderHistory();
+    } else {
+      document.getElementById('inv-grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Loading...</div>';
+    }
   } catch(e) {}
-  // Then show loading indicator if no cached skus yet
-  if (!state.skus.length) {
-    document.getElementById('inv-grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Loading...</div>';
-  }
 
   // Wait for supabase CDN to be ready
   function waitForSupabase(cb, attempts=0) {
