@@ -207,15 +207,6 @@
 
 <!-- NEW SALE -->
 <div class="panel" id="panel-newsale">
-  <!-- Pending orders queue -->
-  <div id="newsale-pending-wrap" style="margin-bottom:14px;display:none;">
-    <div class="sec-row" style="margin-top:0;margin-bottom:10px;">
-      <span class="sec-label">Pending Orders</span>
-      <span class="hist-count" id="newsale-pending-count">0</span>
-    </div>
-    <div id="newsale-pending-list"></div>
-  </div>
-
   <div class="sale-form" id="sale-form-wrap">
     <div class="fsec">Customer</div>
     <div class="field"><input type="text" id="f-name" placeholder="First name or handle" autocomplete="off"></div>
@@ -246,6 +237,16 @@
       <span class="ov" id="order-total">$0</span>
     </div>
     <button class="submit-btn" onclick="logSale()">Log Sale</button>
+
+    <!-- Pending orders divider -->
+    <div style="border-top:1px solid var(--border);margin:20px 0 16px;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span class="fsec" style="margin:0;">Pending Orders</span>
+      <span class="hist-count" id="newsale-pending-count">0</span>
+    </div>
+    <div id="newsale-pending-list">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:8px 0;">No pending orders</div>
+    </div>
   </div>
 
   <div class="sale-success" id="sale-success">
@@ -865,16 +866,15 @@
   }
 
   async function loadPendingForNewSale() {
+    if (!supa) return;
     const { data } = await supa.from('orders').select('*, order_items(*)').eq('status','pending').order('created_at',{ascending:false});
     const list = document.getElementById('newsale-pending-list');
     const countEl = document.getElementById('newsale-pending-count');
     if (!data || !data.length) {
       if (countEl) countEl.textContent = '0';
-      if (list) list.innerHTML = '';
-      document.getElementById('newsale-pending-wrap').style.display = 'none';
+      if (list) list.innerHTML = '<div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:8px 0;">No pending orders</div>';
       return;
     }
-    document.getElementById('newsale-pending-wrap').style.display = 'block';
     if (countEl) countEl.textContent = data.length;
     list.innerHTML = data.map(o => {
       const lines = (o.order_items||[]).map(i=>`${i.sku_name} ×${i.qty}`).join(', ');
