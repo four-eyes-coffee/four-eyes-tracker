@@ -207,48 +207,55 @@
 
 <!-- NEW SALE -->
 <div class="panel" id="panel-newsale">
-  <div class="sale-form" id="sale-form-wrap">
-    <div class="fsec">Customer</div>
-    <div class="field"><input type="text" id="f-name" placeholder="First name or handle" autocomplete="off"></div>
 
-    <div class="fsec">Items</div>
-    <div class="items-list" id="items-list"></div>
-    <div class="flavor-picker" id="flavor-picker"></div>
+  <!-- PENDING ORDERS — always visible -->
+  <div class="sec-row" style="margin-top:0;">
+    <span class="sec-label">Pending Orders</span>
+    <span class="hist-count" id="newsale-pending-count">0</span>
+  </div>
+  <div id="newsale-pending-list">
+    <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:8px 0 12px;">No pending orders</div>
+  </div>
 
-    <div class="fsec" style="margin-top:14px;">Payment</div>
-    <div class="pay-pills">
-      <button class="pay-pill" onclick="selectPay('Cash',this)">Cash</button>
-      <button class="pay-pill" onclick="selectPay('Venmo',this)">Venmo</button>
-      <button class="pay-pill" onclick="selectPay('Card',this)">Card</button>
-      <button class="pay-pill" onclick="selectPay('Zelle',this)">Zelle</button>
-      <button class="pay-pill" onclick="selectPay('Gift',this)">Gift</button>
-    </div>
+  <!-- DIVIDER -->
+  <div style="border-top:2px solid var(--border);margin:4px 0 18px;"></div>
 
-    <div class="fsec" style="margin-top:14px;">Bottles Returned</div>
-    <div class="discount-row">
-      <button class="ibtn" onclick="changeReturns(-1)" type="button">&#x2212;</button>
-      <span class="item-qty" id="f-returns" style="font-size:22px;min-width:32px;">0</span>
-      <button class="ibtn" onclick="changeReturns(1)" type="button">+</button>
-      <span style="font-size:11px;color:var(--muted);margin-left:6px;letter-spacing:0.5px;">&#x2212;$3 each</span>
-    </div>
+  <!-- SALE ENTRY FORM -->
+  <div id="sale-form-wrap">
+    <div class="sale-form">
+      <div class="fsec">Customer</div>
+      <div class="field"><input type="text" id="f-name" placeholder="First name or handle" autocomplete="off"></div>
 
-    <div class="order-summary">
-      <span class="ol">Total</span>
-      <span class="ov" id="order-total">$0</span>
-    </div>
-    <button class="submit-btn" onclick="logSale()">Log Sale</button>
+      <div class="fsec">Items</div>
+      <div class="items-list" id="items-list"></div>
+      <div class="flavor-picker" id="flavor-picker"></div>
 
-    <!-- Pending orders divider -->
-    <div style="border-top:1px solid var(--border);margin:20px 0 16px;"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <span class="fsec" style="margin:0;">Pending Orders</span>
-      <span class="hist-count" id="newsale-pending-count">0</span>
-    </div>
-    <div id="newsale-pending-list">
-      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:8px 0;">No pending orders</div>
+      <div class="fsec" style="margin-top:14px;">Payment</div>
+      <div class="pay-pills">
+        <button class="pay-pill" onclick="selectPay('Cash',this)">Cash</button>
+        <button class="pay-pill" onclick="selectPay('Venmo',this)">Venmo</button>
+        <button class="pay-pill" onclick="selectPay('Card',this)">Card</button>
+        <button class="pay-pill" onclick="selectPay('Zelle',this)">Zelle</button>
+        <button class="pay-pill" onclick="selectPay('Gift',this)">Gift</button>
+      </div>
+
+      <div class="fsec" style="margin-top:14px;">Bottles Returned</div>
+      <div class="discount-row">
+        <button class="ibtn" onclick="changeReturns(-1)" type="button">&#x2212;</button>
+        <span class="item-qty" id="f-returns" style="font-size:22px;min-width:32px;">0</span>
+        <button class="ibtn" onclick="changeReturns(1)" type="button">+</button>
+        <span style="font-size:11px;color:var(--muted);margin-left:6px;letter-spacing:0.5px;">&#x2212;$3 each</span>
+      </div>
+
+      <div class="order-summary">
+        <span class="ol">Total</span>
+        <span class="ov" id="order-total">$0</span>
+      </div>
+      <button class="submit-btn" onclick="logSale()">Log Sale</button>
     </div>
   </div>
 
+  <!-- SALE CONFIRMED STATE -->
   <div class="sale-success" id="sale-success">
     <div class="si">&#x2713;</div>
     <div class="sm" id="success-name"></div>
@@ -256,6 +263,7 @@
     <button class="log-again-btn" onclick="logAnother()">+ Log Another Sale</button>
     <button class="see-history-btn" onclick="switchTab('history')">View History</button>
   </div>
+
 </div>
 
 <!-- HISTORY -->
@@ -357,9 +365,19 @@
         status: o.status
       }));
     }
+      // Save to localStorage as backup
+      localStorage.setItem('fec_skus', JSON.stringify(state.skus));
+      localStorage.setItem('fec_sales', JSON.stringify(state.sales));
       renderDashboard(); renderHistory(); renderSaleForm(); loadPendingForNewSale();
     } catch(e) {
       console.error('Supabase load error:', e);
+      // Fall back to localStorage
+      try {
+        const cachedSkus = localStorage.getItem('fec_skus');
+        const cachedSales = localStorage.getItem('fec_sales');
+        if (cachedSkus) state.skus = JSON.parse(cachedSkus);
+        if (cachedSales) state.sales = JSON.parse(cachedSales);
+      } catch(le) {}
       renderDashboard(); renderHistory(); renderSaleForm();
     }
   }
@@ -630,6 +648,7 @@
       time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
     };
     state.sales.unshift(sale);
+    localStorage.setItem('fec_sales', JSON.stringify(state.sales));
     saveState(); saveSaleToSupabase(sale); renderDashboard(); renderHistory();
     document.getElementById('sale-form-wrap').style.display='none';
     document.getElementById('sale-success').classList.add('show');
@@ -686,6 +705,7 @@
     });
     const delId = state.sales[idx].id;
     state.sales.splice(idx,1);
+    localStorage.setItem('fec_sales', JSON.stringify(state.sales));
     saveState(); deleteSaleFromSupabase(delId); renderDashboard(); renderHistory();
   }
 
@@ -897,8 +917,17 @@
   document.getElementById('session-date').textContent =
     new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 
-  // Show loading state on dashboard while Supabase loads
-  document.getElementById('inv-grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Loading...</div>';
+  // Load from localStorage immediately so screen isn't blank
+  try {
+    const cachedSkus = localStorage.getItem('fec_skus');
+    const cachedSales = localStorage.getItem('fec_sales');
+    if (cachedSkus) { state.skus = JSON.parse(cachedSkus); renderDashboard(); renderSaleForm(); }
+    if (cachedSales) { state.sales = JSON.parse(cachedSales); renderHistory(); }
+  } catch(e) {}
+  // Then show loading indicator if no cached skus yet
+  if (!state.skus.length) {
+    document.getElementById('inv-grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Loading...</div>';
+  }
 
   // Wait for supabase CDN to be ready
   function waitForSupabase(cb, attempts=0) {
