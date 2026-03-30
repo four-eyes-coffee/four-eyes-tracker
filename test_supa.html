@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Supabase Test</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body style="background:#000;color:#fff;font-family:monospace;padding:20px;">
+<h2 style="color:#e6ff00;">Supabase Connection Test</h2>
+<div id="status" style="margin-top:20px;font-size:14px;">Testing...</div>
+
+<script>
+  const SUPA_URL = 'https://kqmdnrlpfbnnxxtgbrgd.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbWRucmxwZmJubnh4dGdicmdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MzE5MjksImV4cCI6MjA5MDQwNzkyOX0.e6kvqx3PHLkpJJc6PiJ6TmBS9f9f0gk5-r2i_vnx5xQ';
+
+  const log = (msg, color='#fff') => {
+    const el = document.getElementById('status');
+    el.innerHTML += `<div style="color:${color};margin:4px 0;">${msg}</div>`;
+  };
+
+  async function test() {
+    try {
+      log('1. Creating Supabase client...');
+      const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+      log('✓ Client created', '#e6ff00');
+
+      log('2. Fetching SKUs...');
+      const { data, error } = await supa.from('skus').select('*');
+
+      if (error) {
+        log('✗ Error: ' + JSON.stringify(error), '#ff4444');
+      } else {
+        log('✓ SKUs loaded: ' + JSON.stringify(data), '#00ff88');
+      }
+    } catch(e) {
+      log('✗ Exception: ' + e.message, '#ff4444');
+    }
+  }
+
+  window.addEventListener('load', () => {
+    setTimeout(test, 500);
+  });
+</script>
+</body>
+</html>
