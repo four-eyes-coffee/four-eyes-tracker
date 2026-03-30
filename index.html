@@ -162,6 +162,12 @@
   .modal-save { width:100%; padding:13px; background:var(--yellow); color:var(--black); border:none; border-radius:3px; font-family:'Rubik',sans-serif; font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase; cursor:pointer; margin-top:6px; }
   .modal-del { width:100%; padding:11px; background:transparent; border:2px solid rgba(255,255,255,0.1); border-radius:3px; font-family:'Rubik',sans-serif; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); cursor:pointer; margin-top:8px; }
   .modal-del:active { border-color:var(--yellow); color:var(--yellow); }
+  .pending-modal-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; }
+  .pending-modal-item:last-child { border-bottom:none; }
+  .pending-modal-item .pk { color:var(--muted); font-weight:500; }
+  .pending-modal-item .pv { font-weight:700; text-align:right; }
+  .modal-confirm { width:100%; padding:13px; background:var(--yellow); color:var(--black); border:none; border-radius:3px; font-family:'Rubik',sans-serif; font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase; cursor:pointer; margin-top:6px; }
+  .modal-confirm:active { opacity:0.8; }
   .pending-card { background:var(--card); border:1.5px solid var(--border); border-left:3px solid var(--yellow); border-radius:3px; padding:13px 14px; margin-bottom:8px; }
   .pending-card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
   .pending-name { font-size:14px; font-weight:700; }
@@ -203,10 +209,7 @@
     <div class="rev-total"><span class="l">Net</span><span class="v" id="total-rev">$0</span></div>
     <div id="rev-gift-line" style="display:none;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed rgba(0,0,0,0.15);"></div>
   </div>
-  <div style="display:flex;gap:8px;margin-top:12px;">
-    <button class="reset-btn" style="flex:1;" onclick="resetAll()">&#x21BA; Reset Session</button>
-    <button style="flex:none;padding:12px 16px;background:var(--blue);border:none;border-radius:3px;color:var(--white);font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;" onclick="loadFromSupabase()" title="Refresh data">&#x21BB;</button>
-  </div>
+  <button style="width:100%;padding:12px 16px;background:var(--blue);border:none;border-radius:3px;color:var(--white);font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-top:12px;font-family:'Rubik',sans-serif;font-weight:700;letter-spacing:2px;text-transform:uppercase;font-size:11px;" onclick="loadFromSupabase()">&#x21BB; Refresh</button>
 </div>
 
 <!-- NEW SALE -->
@@ -297,7 +300,10 @@
   <div class="sec-row"><span class="sec-label">Weekly Drop Code</span></div>
   <div class="rev-card" style="margin-bottom:14px;">
     <div class="rev-title">Active Code</div>
-    <div id="active-code-display" style="font-size:28px;font-weight:900;letter-spacing:2px;color:var(--black);margin:8px 0 4px;">—</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0 4px;">
+      <div id="active-code-display" style="font-size:24px;font-weight:900;letter-spacing:2px;color:var(--black);">—</div>
+      <button id="copy-code-btn" onclick="copyCode()" style="background:rgba(0,0,0,0.12);border:none;border-radius:2px;padding:6px 10px;cursor:pointer;font-size:14px;-webkit-tap-highlight-color:transparent;" title="Copy code">&#x2398;</button>
+    </div>
     <div id="active-code-expiry" style="font-size:10px;color:rgba(0,0,0,0.45);font-weight:700;letter-spacing:1px;"></div>
   </div>
   <button class="submit-btn" style="margin-bottom:10px;" onclick="generateCode()">Generate New Code</button>
@@ -790,16 +796,16 @@
   // ── THEMED CODE GENERATOR ──
   const CODE_THEMES = {
     'four_eyes': [
-      ['FIRST·BLOOM','DRAGON·PEARL','OFFBEAT·AURA','HAZE·RISE','OBSERVER','SLOW·DRIP','COLD·SOUL','FOUR·EYES','COFFEE·WITH·SOUL','PATIENCE'],
+      ['FIRST-BLOOM','DRAGON-PEARL','OFFBEAT-AURA','HAZE-RISE','OBSERVER','SLOW-DRIP','COLD-SOUL','FOUR-EYES','COFFEE-WITH-SOUL','PATIENCE'],
     ],
     'coffee_vibe': [
-      ['SLOW·POUR','COLD·WAVE','DARK·PULL','DEEP·BREW','STILL·STEEP','QUIET·GRIND','DARK·MATTER','SLOW·EXTRACT','COLD·PRESS','DEEP·ROAST'],
+      ['SLOW-POUR','COLD-WAVE','DARK-PULL','DEEP-BREW','STILL-STEEP','QUIET-GRIND','DARK-MATTER','SLOW-EXTRACT','COLD-PRESS','DEEP-ROAST'],
     ],
     'la_soul': [
-      ['GOLDEN·HOUR','MARINE·LAYER','ECHO·SOUL','SILVER·LAKE','CRENSHAW·WAVE','SUNSET·PULL','EAST·SIDE','HIGHLAND·DRIP','ANGELES·SLOW','PICO·FLOW'],
+      ['GOLDEN-HOUR','MARINE-LAYER','ECHO-SOUL','SILVER-LAKE','CRENSHAW-WAVE','SUNSET-PULL','EAST-SIDE','HIGHLAND-DRIP','ANGELES-SLOW','PICO-FLOW'],
     ],
     'soul_life': [
-      ['QUIET·STORM','STILL·WATER','SLOW·BURN','DEEP·CUTS','INNER·PEACE','SOUL·TIED','GOOD·FEELING','WARM·LIGHT','STEADY·WAVE','ROOT·DOWN'],
+      ['QUIET-STORM','STILL-WATER','SLOW-BURN','DEEP-CUTS','INNER-PEACE','SOUL-TIED','GOOD-FEELING','WARM-LIGHT','STEADY-WAVE','ROOT-DOWN'],
     ]
   };
 
@@ -821,7 +827,7 @@
       // middle — insert after first word
       if (parts.length > 1) {
         parts.splice(1, 0, num);
-        code = parts.join('·');
+        code = parts.join('-');
       } else {
         code = phrase + '·' + num;
       }
@@ -836,6 +842,26 @@
     document.getElementById('active-code-display').textContent = code;
     const expDate = new Date(expires).toLocaleDateString('en-US',{month:'short',day:'numeric'});
     document.getElementById('active-code-expiry').textContent = 'Expires ' + expDate;
+  }
+
+  function copyCode() {
+    const code = document.getElementById('active-code-display').textContent;
+    if (!code || code === '—') return;
+    navigator.clipboard.writeText(code).then(() => {
+      const btn = document.getElementById('copy-code-btn');
+      btn.textContent = '✓';
+      btn.style.background = 'rgba(0,0,0,0.25)';
+      setTimeout(() => { btn.textContent = '⎘'; btn.style.background = 'rgba(0,0,0,0.12)'; }, 1500);
+    }).catch(() => {
+      // Fallback for older browsers
+      const el = document.createElement('textarea');
+      el.value = code; document.body.appendChild(el);
+      el.select(); document.execCommand('copy');
+      document.body.removeChild(el);
+      const btn = document.getElementById('copy-code-btn');
+      btn.textContent = '✓';
+      setTimeout(() => { btn.textContent = '⎘'; }, 1500);
+    });
   }
 
   async function saveCodeToSupabase(code, expiresAt) {
@@ -869,38 +895,17 @@
         </div>
         <div class="pending-items">${lines}</div>
         <div class="pending-actions">
-          <button class="approve-btn" onclick="approveOrder(${o.id})">Approve</button>
+          <button class="approve-btn" onclick="approveOrder(${o.id})">View & Approve</button>
           <button class="reject-btn" onclick="rejectOrder(${o.id})">Decline</button>
         </div>
       </div>`;
     }).join('');
   }
 
-  async function approveOrder(id, fromNewSale=false) {
-    // Load the order details
+  async function approveOrder(id) {
     const { data: order } = await supa.from('orders').select('*, order_items(*)').eq('id', id).single();
     if (!order) return;
-    // Pre-fill the New Sale form with order details
-    document.getElementById('f-name').value = order.customer_name || '';
-    cart = [];
-    formPay = order.pay_method || null;
-    (order.order_items||[]).forEach(item => {
-      cart.push({ skuId: item.sku_id, qty: item.qty });
-    });
-    // Mark the order as approved in Supabase
-    await supa.from('orders').update({ status: 'approved' }).eq('id', id);
-    // Refresh pending lists
-    loadPendingOrders();
-    loadPendingForNewSale();
-    // Switch to New Sale tab and render
-    switchTab('newsale');
-    renderSaleForm();
-    // Update pay pill UI
-    if (formPay) {
-      document.querySelectorAll('.pay-pill').forEach(p => {
-        if (p.textContent === formPay) p.classList.add('selected');
-      });
-    }
+    openPendingModal(order);
   }
 
   async function rejectOrder(id) {
@@ -929,12 +934,81 @@
         </div>
         <div class="pending-items">${lines}</div>
         <div class="pending-actions">
-          <button class="approve-btn" onclick="approveOrder(${o.id}, true)">Fill & Approve</button>
+          <button class="approve-btn" onclick="approveOrder(${o.id})">View & Approve</button>
           <button class="reject-btn" onclick="rejectOrder(${o.id})">Decline</button>
         </div>
       </div>`;
     }).join('');
   }
+
+  // ── PENDING ORDER MODAL ──
+  let pendingModalOrder = null;
+
+  function openPendingModal(order) {
+    pendingModalOrder = order;
+    document.getElementById('pm-id').value = order.id;
+    document.getElementById('pm-name').textContent = order.customer_name || '—';
+    document.getElementById('pm-contact').textContent = order.fulfillment_type + ' · ' + (order.fulfillment_window||'TBD');
+    document.getElementById('pm-pay').value = '';
+    document.getElementById('pm-notes').value = order.notes||'';
+    document.getElementById('pm-total').textContent = '$' + (order.total||0);
+    const items = (order.order_items||[]);
+    document.getElementById('pm-items').innerHTML = '<div style="font-size:9px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Items</div>' +
+      items.map(i => `<div class="pending-modal-item"><span class="pk">${esc(i.sku_name)}</span><span class="pv">×${i.qty} &mdash; $${i.price*i.qty}</span></div>`).join('');
+    document.getElementById('pending-modal').classList.add('open');
+  }
+
+  function closePendingModal() {
+    document.getElementById('pending-modal').classList.remove('open');
+    pendingModalOrder = null;
+  }
+
+  async function confirmPendingOrder() {
+    if (!pendingModalOrder) return;
+    const pay = document.getElementById('pm-pay').value.trim() || 'Confirmed';
+    const id = pendingModalOrder.id;
+    const o = pendingModalOrder;
+
+    // Deduct inventory
+    const items = o.order_items||[];
+    for (const item of items) {
+      const sku = state.skus.find(s=>s.id===item.sku_id);
+      if (sku) {
+        sku.sold += item.qty;
+        await supa.from('skus').update({ sold: sku.sold }).eq('id', sku.id);
+      }
+    }
+
+    // Log as completed sale in state
+    const sale = {
+      id, name: o.customer_name||'—',
+      items: items.map(i=>({ skuId:i.sku_id, skuName:i.sku_name, qty:i.qty, price:parseFloat(i.price) })),
+      pay, discount:0, total: parseFloat(o.total)||0,
+      time: new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
+    };
+    state.sales.unshift(sale);
+    saveLocal();
+
+    // Update order status in Supabase
+    await supa.from('orders').update({ status:'completed', pay_method: pay }).eq('id', id);
+
+    closePendingModal();
+    loadPendingForNewSale();
+    loadPendingOrders();
+    renderDashboard();
+    renderHistory();
+  }
+
+  async function declinePendingOrder() {
+    if (!pendingModalOrder) return;
+    if (!confirm('Decline this order?')) return;
+    await supa.from('orders').update({ status:'rejected' }).eq('id', pendingModalOrder.id);
+    closePendingModal();
+    loadPendingForNewSale();
+    loadPendingOrders();
+  }
+
+  document.getElementById('pending-modal').addEventListener('click', function(e) { if(e.target===this) closePendingModal(); });
 
   function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
