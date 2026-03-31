@@ -655,16 +655,31 @@
         order_id: orderData.id, sku_id: i.skuId, sku_name: i.skuName, qty: i.qty, price: i.price
       })));
     }
-    // Update sku sold counts
-    for (const item of sale.items) {
-      const sku = state.skus.find(s=>s.id===item.skuId);
-      if (sku) await supa.from('skus').update({ sold: sku.sold }).eq('id', sku.id);
-    }
   }
 
   async function deleteSaleFromSupabase(id) {
     await supa.from('order_items').delete().eq('order_id', id);
     await supa.from('orders').delete().eq('id', id);
+  }
+
+  async function updateSaleInSupabase(sale) {
+    if (!supa) return;
+    // Update order header fields
+    await supa.from('orders').update({
+      customer_name: sale.name,
+      pay_method:    sale.pay,
+      discount:      sale.discount,
+      total:         sale.total
+    }).eq('id', sale.id);
+    // Update each line item qty + sync sku sold count
+    await Promise.all(sale.items.map(async item => {
+      await supa.from('order_items')
+        .update({ qty: item.qty })
+        .eq('order_id', sale.id)
+        .eq('sku_id', item.skuId);
+      const sku = state.skus.find(s => s.id === item.skuId);
+      if (sku) await supa.from('skus').update({ sold: sku.sold }).eq('id', sku.id);
+    }));
   }
 
   function saveLocal() {
@@ -788,7 +803,6 @@
     });
 
     // Revenue rows — paid SKU breakdown + gifted counts
-    const totalDiscounts = paidSales.reduce((sum, s) => sum + (s.discount || 0), 0);
     const netRevenue     = paidSales.reduce((sum, s) => sum + (s.total || 0), 0);
 
     const revRowsHtml = state.skus.map(sku => {
@@ -864,17 +878,28 @@
     } else {
       state.skus.push({ id:state.nextSkuId++, name, stock, sold:0, price });
     }
-    saveSkuToSupabase(id ? state.skus.find(s=>s.id===parseInt(id)) : state.skus[state.skus.length-1]); saveLocal(); closeSkuModal(); renderDashboard(); renderSaleForm();
+    const savedSku = id ? state.skus.find(s => s.id === parseInt(id)) : state.skus[state.skus.length - 1];
+    saveSkuToSupabase(savedSku);
+    saveLocal();
+    closeSkuModal();
+    renderDashboard();
+    renderSaleForm();
   }
 
-  function deleteSku() {
-    const id = parseInt(document.getElementById('sm-id').value);
-    const sku = state.skus.find(s=>s.id===id);
-    if (!sku || !confirm('Remove "'+sku.name+'"?')) return;
-    state.sales = state.sales.filter(s => !s.items.some(i=>i.skuId===id));
-    state.skus = state.skus.filter(s=>s.id!==id);
-    cart = cart.filter(c=>c.skuId!==id);
-    saveSkuToSupabase(id ? state.skus.find(s=>s.id===parseInt(id)) : state.skus[state.skus.length-1]); saveLocal(); closeSkuModal(); renderDashboard(); renderSaleForm(); renderHistory();
+  async function deleteSku() {
+    const id  = parseInt(document.getElementById('sm-id').value);
+    const sku = state.skus.find(s => s.id === id);
+    if (!sku || !confirm('Remove "' + sku.name + '"?')) return;
+    // Mark inactive in Supabase before removing from state
+    await supa.from('skus').update({ active: false }).eq('id', id);
+    state.sales = state.sales.filter(s => !s.items.some(i => i.skuId === id));
+    state.skus  = state.skus.filter(s => s.id !== id);
+    cart        = cart.filter(c => c.skuId !== id);
+    saveLocal();
+    closeSkuModal();
+    renderDashboard();
+    renderSaleForm();
+    renderHistory();
   }
 
   function closeSkuModal() { document.getElementById('sku-modal').classList.remove('open'); }
@@ -1120,16 +1145,18 @@
     body.style.display = isOpen ? 'none' : 'block';
   }
 
-  function deleteSale(id) {
-    const idx = state.sales.findIndex(s=>s.id===id);
-    if (idx===-1) return;
+  async function deleteSale(id) {
+    const idx = state.sales.findIndex(s => s.id === id);
+    if (idx === -1) return;
     state.sales[idx].items.forEach(item => {
-      const sku = state.skus.find(sk=>sk.id===item.skuId);
-      if (sku) sku.sold = Math.max(0, sku.sold-item.qty);
+      const sku = state.skus.find(sk => sk.id === item.skuId);
+      if (sku) sku.sold = Math.max(0, sku.sold - item.qty);
     });
-    const delId = state.sales[idx].id;
-    state.sales.splice(idx,1);
-    saveLocal(); deleteSaleFromSupabase(delId); renderDashboard(); renderHistory();
+    state.sales.splice(idx, 1);
+    saveLocal();
+    renderDashboard();
+    renderHistory();
+    await deleteSaleFromSupabase(id);
   }
 
   function openEditSale(id) {
@@ -1148,32 +1175,46 @@
     document.getElementById('sale-modal').classList.add('open');
   }
 
-  function saveSaleEdit() {
-    const id = parseInt(document.getElementById('esm-id').value);
+  async function saveSaleEdit() {
+    const id  = parseInt(document.getElementById('esm-id').value);
     const name = document.getElementById('esm-name').value.trim();
-    const pay = document.getElementById('esm-pay').value.trim();
-    const returns = parseInt(document.getElementById('esm-discount').value)||0;
-    const disc = returns * 3;
-    if (!name||!pay) { alert('Fill in all fields.'); return; }
-    const s = state.sales.find(x=>x.id===id);
+    const pay  = document.getElementById('esm-pay').value;
+    const disc = (parseInt(document.getElementById('esm-discount').value) || 0) * 3;
+    if (!name || !pay) { alert('Fill in all fields.'); return; }
+    const s = state.sales.find(x => x.id === id);
     if (!s) return;
-    // revert inventory
+
+    // Revert inventory to pre-edit state
     s.items.forEach(item => {
-      const sku = state.skus.find(sk=>sk.id===item.skuId);
-      if (sku) sku.sold = Math.max(0, sku.sold-item.qty);
+      const sku = state.skus.find(sk => sk.id === item.skuId);
+      if (sku) sku.sold = Math.max(0, sku.sold - item.qty);
     });
-    // apply new qtys
-    let ok = true;
-    s.items.forEach((item,idx) => {
-      const newQty = parseInt(document.getElementById('esm-qty-'+idx).value)||1;
-      const sku = state.skus.find(sk=>sk.id===item.skuId);
-      if (sku && sku.sold+newQty > sku.stock) { alert('Not enough stock for '+item.skuName); ok=false; }
-      else { item.qty=newQty; if(sku) sku.sold+=newQty; }
+
+    // Validate + apply new quantities
+    let valid = true;
+    s.items.forEach((item, i) => {
+      const newQty = parseInt(document.getElementById('esm-qty-' + i).value) || 1;
+      const sku    = state.skus.find(sk => sk.id === item.skuId);
+      if (sku && sku.sold + newQty > sku.stock) {
+        alert('Not enough stock for ' + item.skuName); valid = false;
+      } else {
+        item.qty = newQty;
+        if (sku) sku.sold += newQty;
+      }
     });
-    if (!ok) return;
-    const subtotal = s.items.reduce((sum,i)=>sum+(i.price*i.qty),0);
-    s.name=name; s.pay=pay; s.discount=disc; s.total=Math.max(0,subtotal-disc);
-    saveLocal(); closeSaleModal(); renderDashboard(); renderHistory();
+    if (!valid) return;
+
+    const subtotal = s.items.reduce((sum, i) => sum + i.price * i.qty, 0);
+    s.name    = name;
+    s.pay     = pay;
+    s.discount = disc;
+    s.total   = Math.max(0, subtotal - disc);
+
+    closeSaleModal();
+    renderDashboard();
+    renderHistory();
+    saveLocal();
+    await updateSaleInSupabase(s);
   }
 
   function closeSaleModal() { document.getElementById('sale-modal').classList.remove('open'); }
