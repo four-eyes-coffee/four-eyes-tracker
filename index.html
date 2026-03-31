@@ -162,6 +162,89 @@
   .modal-save { width:100%; padding:13px; background:var(--yellow); color:var(--black); border:none; border-radius:3px; font-family:'Rubik',sans-serif; font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase; cursor:pointer; margin-top:6px; }
   .modal-del { width:100%; padding:11px; background:transparent; border:2px solid rgba(255,255,255,0.1); border-radius:3px; font-family:'Rubik',sans-serif; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); cursor:pointer; margin-top:8px; }
   .modal-del:active { border-color:var(--yellow); color:var(--yellow); }
+
+  /* DASHBOARD STAT MINI-CARDS */
+  .dash-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .dash-stat { background:var(--card); border:1.5px solid var(--border); border-radius:3px; padding:14px 12px; }
+  .dash-stat-label { font-size:9px; font-weight:900; letter-spacing:2.5px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+  .dash-stat-value { font-size:26px; font-weight:900; letter-spacing:-0.5px; line-height:1; }
+  .dash-stat-sub { font-size:9px; font-weight:700; color:var(--muted); margin-top:5px; letter-spacing:0.5px; display:flex; align-items:center; gap:4px; }
+  .trend-up   { color:#00c853; }
+  .trend-down { color:var(--blue); }
+
+  /* HISTORY FILTER */
+  .hist-filter-wrap { margin-bottom:14px; }
+  .hist-filter { width:100%; padding:10px 12px; background:#000; border:2px solid var(--border); border-radius:3px; font-family:'Rubik',sans-serif; font-size:12px; font-weight:700; color:var(--white); outline:none; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23ffffff' stroke-opacity='0.4' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; cursor:pointer; }
+  .hist-filter:focus { border-color:var(--yellow); }
+
+  /* MONTH ACCORDION */
+  .month-group { margin-bottom:10px; }
+  .month-group-hdr { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--card); border:1.5px solid var(--border); border-radius:3px; cursor:pointer; -webkit-tap-highlight-color:transparent; user-select:none; }
+  .month-group-hdr.open { border-bottom-left-radius:0; border-bottom-right-radius:0; border-bottom-color:transparent; }
+  .month-group-left { display:flex; align-items:center; gap:10px; }
+  .month-group-name { font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase; }
+  .month-group-meta { font-size:10px; color:var(--muted); font-weight:500; }
+  .month-group-chevron { font-size:12px; color:var(--muted); transition:transform 0.2s; display:inline-block; }
+  .month-group-hdr.open .month-group-chevron { transform:rotate(180deg); }
+  .month-group-body { border:1.5px solid var(--border); border-top:none; border-radius:0 0 3px 3px; overflow:hidden; }
+  .month-group-body .sale-card { border-radius:0; border:none; border-bottom:1px solid var(--border); margin-bottom:0; }
+  .month-group-body .sale-card:last-child { border-bottom:none; }
+
+  /* PAYMENT SELECT (edit modals) */
+  .pay-select { width:100%; padding:10px 36px 10px 12px; background:#000; border:2px solid var(--border); border-radius:3px; font-family:'Rubik',sans-serif; font-size:14px; font-weight:500; color:var(--white); outline:none; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23ffffff' stroke-opacity='0.4' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; cursor:pointer; }
+  .pay-select:focus { border-color:var(--yellow); }
+  .pay-select option { background:#111; color:var(--white); }
+
+  /* REFRESH BUTTON */
+  .refresh-btn { width:100%; padding:13px 16px; background:var(--blue); border:none; border-radius:3px; color:var(--white); font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; cursor:pointer; -webkit-tap-highlight-color:transparent; margin-top:12px; font-family:'Rubik',sans-serif; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .refresh-btn:active { opacity:0.8; }
+  .mb-14 { margin-bottom:14px; }
+
+  /* SALE CARD */
+  .sc-disc-tag { font-size:10px; color:var(--blue); display:block; font-weight:700; text-align:right; }
+  .tpay.gift { background:rgba(230,255,0,0.15); color:var(--yellow); }
+
+  /* INVENTORY */
+  .inv-pending-tag { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--blue); margin-top:6px; }
+
+  /* PENDING MODAL */
+  .pm-customer { margin-bottom:14px; }
+  .pm-items { margin-bottom:14px; }
+
+  /* DROPS PANEL */
+  .submit-btn--mb { margin-bottom:10px; }
+
+  /* DROP PANEL UTILITY */
+  .code-row { display:flex; align-items:center; justify-content:space-between; margin:8px 0 4px; }
+  .active-code-text { font-size:24px; font-weight:900; letter-spacing:2px; color:var(--black); }
+  .active-code-expiry { font-size:10px; color:rgba(0,0,0,0.45); font-weight:700; letter-spacing:1px; }
+  .copy-code-btn { background:var(--black); border:none; border-radius:2px; padding:7px 9px; cursor:pointer; display:flex; align-items:center; justify-content:center; -webkit-tap-highlight-color:transparent; }
+
+  /* PENDING MODAL */
+  .pm-total-box { background:rgba(230,255,0,0.08); border:1.5px solid var(--yellow); border-radius:3px; padding:10px 14px; display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; }
+  .pm-total-lbl { font-size:10px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+  .pm-total-val { font-size:22px; font-weight:900; color:var(--yellow); }
+  .pm-name { font-size:16px; font-weight:900; }
+  .pm-contact { font-size:11px; color:var(--muted); margin-top:2px; }
+  .modal-items-label { font-size:9px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+
+  /* REVENUE GIFT LINE */
+  .rev-gift-line { justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px dashed rgba(0,0,0,0.15); }
+  .gift-qty-label { color:rgba(0,0,0,0.55); font-size:11px; font-weight:500; }
+  .gift-val-label { font-size:11px; font-weight:700; }
+
+  /* NEW SALE MISC */
+  .section-divider { border-top:1px solid var(--border); margin:24px 0 16px; }
+  .pending-header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .returns-hint { font-size:11px; color:var(--muted); margin-left:6px; letter-spacing:0.5px; }
+  .f-returns { font-size:22px; min-width:32px; }
+
+  /* INVENTORY LOADING */
+  .inv-loading { grid-column:1/-1; text-align:center; padding:20px; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+
+  /* NO PENDING MSG */
+  .no-pending-msg { font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; padding:8px 0; }
+
   @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
   .pending-modal-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; }
   .pending-modal-item:last-child { border-bottom:none; }
@@ -289,14 +372,26 @@
   </div>
   <div class="inv-grid" id="inv-grid"></div>
   <div class="sec-row"><span class="sec-label">Revenue</span></div>
+  <div class="dash-stats">
+    <div class="dash-stat">
+      <div class="dash-stat-label">Annual Total</div>
+      <div class="dash-stat-value" id="dash-annual">$0</div>
+      <div class="dash-stat-sub" id="dash-annual-sub">all sales</div>
+    </div>
+    <div class="dash-stat">
+      <div class="dash-stat-label">This Month</div>
+      <div class="dash-stat-value" id="dash-month">$0</div>
+      <div class="dash-stat-sub" id="dash-month-sub">loading...</div>
+    </div>
+  </div>
   <div class="rev-card">
     <div class="rev-title">Sales Total</div>
     <div id="rev-rows"></div>
     <hr class="rev-div">
     <div class="rev-total"><span class="l">Net</span><span class="v" id="total-rev">$0</span></div>
-    <div id="rev-gift-line" style="display:none;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed rgba(0,0,0,0.15);"></div>
+    <div id="rev-gift-line" class="rev-gift-line" style="display:none;"></div>
   </div>
-  <button id="refresh-btn" onclick="refreshApp()" style="width:100%;padding:13px 16px;background:var(--blue);border:none;border-radius:3px;color:var(--white);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-top:12px;font-family:'Rubik',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;">
+  <button id="refresh-btn" onclick="refreshApp()" class="refresh-btn">
   <svg id="refresh-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
   <span id="refresh-label">Refresh</span>
 </button>
@@ -315,7 +410,7 @@
       <div class="items-list" id="items-list"></div>
       <div class="flavor-picker" id="flavor-picker"></div>
 
-      <div class="fsec" style="margin-top:14px;">Payment</div>
+      <div class="fsec">Payment</div>
       <div class="pay-pills">
         <button class="pay-pill" onclick="selectPay('Cash',this)">Cash</button>
         <button class="pay-pill" onclick="selectPay('Venmo',this)">Venmo</button>
@@ -324,12 +419,12 @@
         <button class="pay-pill" onclick="selectPay('Gift',this)">Gift</button>
       </div>
 
-      <div class="fsec" style="margin-top:14px;">Bottles Returned</div>
+      <div class="fsec">Bottles Returned</div>
       <div class="discount-row">
         <button class="ibtn" onclick="changeReturns(-1)" type="button">&#x2212;</button>
-        <span class="item-qty" id="f-returns" style="font-size:22px;min-width:32px;">0</span>
+        <span class="item-qty f-returns" id="f-returns">0</span>
         <button class="ibtn" onclick="changeReturns(1)" type="button">+</button>
-        <span style="font-size:11px;color:var(--muted);margin-left:6px;letter-spacing:0.5px;">&#x2212;$3 each</span>
+        <span class="returns-hint">&#x2212;$3 each</span>
       </div>
 
       <div class="order-summary">
@@ -350,13 +445,13 @@
   </div>
 
   <!-- PENDING ORDERS — always at the bottom -->
-  <div style="border-top:1px solid var(--border);margin:24px 0 16px;"></div>
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+  <div class="section-divider"></div>
+  <div class="pending-header-row">
     <span class="sec-label">Pending Orders</span>
     <span class="hist-count" id="newsale-pending-count">0</span>
   </div>
   <div id="newsale-pending-list">
-    <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:8px 0;">No pending orders</div>
+    <div class="no-pending-msg">No pending orders</div>
   </div>
 
 </div>
@@ -364,8 +459,13 @@
 <!-- HISTORY -->
 <div class="panel" id="panel-history">
   <div class="hist-header">
-    <span class="hist-title">All Sales</span>
+    <span class="hist-title">Sales History</span>
     <span class="hist-count" id="hist-count">0</span>
+  </div>
+  <div class="hist-filter-wrap">
+    <select class="hist-filter" id="hist-filter" onchange="renderHistory()">
+      <option value="current">This Month</option>
+    </select>
   </div>
   <div id="hist-list"><div class="empty-state">No sales yet.</div></div>
 </div>
@@ -388,20 +488,19 @@
 <!-- DROP PANEL -->
 <div class="panel" id="panel-drops">
   <div class="sec-row"><span class="sec-label">Weekly Drop Code</span></div>
-  <div class="rev-card" style="margin-bottom:14px;">
+  <div class="rev-card" class="mb-14">
     <div class="rev-title">Active Code</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0 4px;">
-      <div id="active-code-display" style="font-size:24px;font-weight:900;letter-spacing:2px;color:var(--black);">—</div>
-      <button id="copy-code-btn" onclick="copyCode()" style="background:var(--black);border:none;border-radius:2px;padding:7px 9px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;" title="Copy code">
+    <div class="code-row">
+      <div id="active-code-display" class="active-code-text">—</div>
+      <button id="copy-code-btn" onclick="copyCode()" class="copy-code-btn" title="Copy code">
   <svg id="copy-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
   <svg id="check-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="20 6 9 17 4 12"/></svg>
 </button>
     </div>
-    <div id="active-code-expiry" style="font-size:10px;color:rgba(0,0,0,0.45);font-weight:700;letter-spacing:1px;"></div>
+    <div id="active-code-expiry" class="active-code-expiry"></div>
   </div>
-  <button class="submit-btn" style="margin-bottom:10px;" onclick="generateCode()">Generate New Code</button>
+  <button class="submit-btn submit-btn--mb" onclick="generateCode()">Generate New Code</button>
   <button class="reset-btn" onclick="deactivateCode()">Deactivate Current Code</button>
-
 
 </div>
 
@@ -411,7 +510,14 @@
     <div class="modal-hdr"><span>Edit Sale</span><button class="modal-close" onclick="closeSaleModal()">&#x2715;</button></div>
     <input type="hidden" id="esm-id">
     <div class="field"><label>Customer Name</label><input type="text" id="esm-name" autocomplete="off"></div>
-    <div class="field"><label>Payment</label><input type="text" id="esm-pay" autocomplete="off"></div>
+    <div class="field"><label>Payment</label>
+      <select id="esm-pay" class="pay-select">
+        <option value="Venmo">Venmo</option>
+        <option value="Cash">Cash</option>
+        <option value="Debit/Credit">Debit/Credit</option>
+        <option value="Gift">Gift</option>
+      </select>
+    </div>
     <div class="field"><label>Bottles Returned (&#x2212;$3 each)</label><input type="number" id="esm-discount" min="0" inputmode="numeric" placeholder="0"></div>
     <div id="esm-items-wrap"></div>
     <button class="modal-save" onclick="saveSaleEdit()">Save Changes</button>
@@ -426,20 +532,26 @@
       <button class="modal-close" onclick="closePendingModal()">&#x2715;</button>
     </div>
     <input type="hidden" id="pm-id">
-    <div id="pm-customer" style="margin-bottom:14px;">
-      <div style="font-size:16px;font-weight:900;" id="pm-name"></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="pm-contact"></div>
+    <div id="pm-customer" class="pm-customer">
+      <div class="pm-name" id="pm-name"></div>
+      <div class="pm-contact" id="pm-contact"></div>
     </div>
     <div class="field"><label>Payment Method</label>
-      <input type="text" id="pm-pay" placeholder="Cash / Venmo / Zelle..." autocomplete="off">
+      <select id="pm-pay" class="pay-select">
+        <option value="">Select payment...</option>
+        <option value="Venmo">Venmo</option>
+        <option value="Cash">Cash</option>
+        <option value="Debit/Credit">Debit/Credit</option>
+        <option value="Gift">Gift</option>
+      </select>
     </div>
     <div class="field"><label>Notes</label>
       <input type="text" id="pm-notes" placeholder="Optional" autocomplete="off">
     </div>
-    <div id="pm-items" style="margin-bottom:14px;"></div>
-    <div style="background:rgba(230,255,0,0.08);border:1.5px solid var(--yellow);border-radius:3px;padding:10px 14px;display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;">
-      <span style="font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Total Due</span>
-      <span style="font-size:22px;font-weight:900;color:var(--yellow);" id="pm-total"></span>
+    <div id="pm-items" class="pm-items"></div>
+    <div class="pm-total-box">
+      <span class="pm-total-lbl">Total Due</span>
+      <span class="pm-total-val" id="pm-total"></span>
     </div>
     <button class="modal-confirm" onclick="confirmPendingOrder()">&#x2713; Confirm Sale</button>
     <button class="modal-del" onclick="declinePendingOrder()">Decline Order</button>
@@ -460,6 +572,9 @@
 
   let cart = [];
   let formPay = null;
+
+  // ── Shared helpers ──────────────────────────────────────────────────────────
+  const fmtMoney = v => '$' + (Number.isInteger(v) ? v : v.toFixed(2));
 
   // ── Supabase helpers ──
   async function loadFromSupabase() {
@@ -583,7 +698,7 @@
       const nc = isOut ? ' out' : isLow ? ' low' : '';
       const bc = isLow ? ' low' : '';
       const pending = _pendingQty[sku.id]||0;
-      const pendingLine = pending > 0 ? `<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--blue);margin-top:6px;">&#x23F3; ${pending} pending</div>` : '';
+      const pendingLine = pending > 0 ? `<div class="inv-pending-tag">&#x23F3; ${pending} pending</div>` : '';
       return `<div class="inv-card">
         <button class="inv-edit" onclick="openEditSku(${sku.id})">&#x270E;</button>
         <div class="inv-name">${esc(sku.name)}</div>
@@ -596,6 +711,54 @@
         ${pendingLine}
       </div>`;
     }).join('');
+
+    // ── Annual total ──
+    const now = new Date();
+    const curYear  = now.getFullYear();
+    const curMonth = now.getMonth();
+
+    const paidAll = state.sales.filter(s => s.pay !== 'Gift');
+
+    const annualTotal = paidAll.reduce((sum, s) => sum + (s.total || 0), 0);
+
+    // Month helper: extract date from sale (sales have .time but not .date stored in state)
+    // We use the Supabase created_at via state.sales — they have s.date if set, otherwise fall back
+    // Since we store sales with a timestamp id (Date.now()), we can parse month from that for local,
+    // and for Supabase sales the id is a UUID/int — use the time string as fallback.
+    // Best approach: add a .monthKey to each sale when loaded. But for now compute from id if numeric.
+    const curMonthKey  = curYear + '-' + String(curMonth+1).padStart(2,'0');
+    const prevMonth    = curMonth === 0 ? 11 : curMonth - 1;
+    const prevYear     = curMonth === 0 ? curYear - 1 : curYear;
+    const prevMonthKey = prevYear + '-' + String(prevMonth+1).padStart(2,'0');
+
+    const curMonthSales  = paidAll.filter(s => getSaleMonthKey(s) === curMonthKey);
+    const prevMonthSales = paidAll.filter(s => getSaleMonthKey(s) === prevMonthKey);
+
+    const curMonthTotal  = curMonthSales.reduce((sum, s) => sum + (s.total||0), 0);
+    const prevMonthTotal = prevMonthSales.reduce((sum, s) => sum + (s.total||0), 0);
+
+    const annualEl = document.getElementById('dash-annual');
+    if (annualEl) annualEl.textContent = fmtMoney(annualTotal);
+
+    const monthEl = document.getElementById('dash-month');
+    if (monthEl) monthEl.textContent = fmtMoney(curMonthTotal);
+
+    const monthSubEl = document.getElementById('dash-month-sub');
+    if (monthSubEl) {
+      if (prevMonthTotal > 0) {
+        const diff = curMonthTotal - prevMonthTotal;
+        const pct  = Math.abs(Math.round((diff / prevMonthTotal) * 100));
+        const up   = diff >= 0;
+        monthSubEl.innerHTML = up
+          ? '<span class="trend-up">↑ ' + pct + '%</span> vs last month'
+          : '<span class="trend-down">↓ ' + pct + '%</span> vs last month';
+      } else {
+        monthSubEl.textContent = 'no prior month data';
+      }
+    }
+
+    const annualSubEl = document.getElementById('dash-annual-sub');
+    if (annualSubEl) annualSubEl.textContent = paidAll.length + ' paid sale' + (paidAll.length !== 1 ? 's' : '');
 
     // Split paid vs gifted sales
     const paidSales = state.sales.filter(s => s.pay !== 'Gift');
@@ -619,12 +782,13 @@
 
     // Revenue rows — paid only
     let gross = 0;
-    document.getElementById('rev-rows').innerHTML = state.skus.map(sku => {
-      const r = paidSkuTotals[sku.id]||0;
+    const revRowsHtml = state.skus.map(sku => {
+      const r = paidSkuTotals[sku.id] || 0;
       gross += r;
-      return `<div class="rev-row"><span class="n">${esc(sku.name)}</span><span class="a">$${r}</span></div>`;
+      return `<div class="rev-row"><span class="n">${esc(sku.name)}</span><span class="a">${fmtMoney(r)}</span></div>`;
     }).join('');
-    document.getElementById('total-rev').textContent = '$' + gross;
+    document.getElementById('rev-rows').innerHTML = revRowsHtml;
+    document.getElementById('total-rev').textContent = fmtMoney(gross);
 
     // Gift line — only show if gifts exist
     const totalGiftQty = Object.values(giftSkuQty).reduce((a,b)=>a+b, 0);
@@ -635,7 +799,7 @@
           return sum + (giftSkuQty[sku.id]||0) * sku.price;
         }, 0);
         giftEl.style.display = 'flex';
-        giftEl.innerHTML = `<span style="color:rgba(0,0,0,0.55);font-size:11px;font-weight:500;">&#x1F381; ${totalGiftQty} bottle${totalGiftQty>1?'s':''} gifted</span><span style="font-size:11px;font-weight:700;">$${giftVal} value</span>`;
+        giftEl.innerHTML = `<span class="gift-qty-label">&#x1F381; \${totalGiftQty} bottle\${totalGiftQty>1?'s':''} gifted</span><span class="gift-val-label">$\${giftVal} value</span>`;
       } else {
         giftEl.style.display = 'none';
       }
@@ -785,8 +949,7 @@
       return sum + (sku ? sku.price*item.qty : 0);
     }, 0);
     const total = formPay === 'Gift' ? 0 : Math.max(0, subtotal - disc);
-    const fmt = Number.isInteger(total) ? total : total.toFixed(2);
-    document.getElementById('order-total').textContent = '$' + fmt;
+    document.getElementById('order-total').textContent = fmtMoney(total);
   }
 
   function selectPay(method, el) {
@@ -824,7 +987,7 @@
     saveLocal(); saveSaleToSupabase(sale); renderDashboard(); renderHistory();
     document.getElementById('sale-form-wrap').style.display='none';
     document.getElementById('sale-success').classList.add('show');
-    document.getElementById('success-name').textContent = name + ' \u2014 $' + (Number.isInteger(total)?total:total.toFixed(2));
+    document.getElementById('success-name').textContent = name + ' \u2014 ' + fmtMoney(total);
     const lines = sale.items.map(i=>i.skuName+' \xd7'+i.qty).join(', ');
     document.getElementById('success-detail').textContent = lines + (formReturns>0?' \u00b7 '+formReturns+' bottle'+(formReturns>1?'s':'')+' returned':'');
   }
@@ -841,31 +1004,102 @@
   }
 
   /* ── HISTORY ── */
+  function getSaleMonthKey(s) {
+    if (s.monthKey) return s.monthKey;
+    if (typeof s.id === 'number' && s.id > 1000000000000) {
+      const d = new Date(s.id);
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    }
+    const n = new Date();
+    return n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0');
+  }
+
+  function getMonthLabel(key) {
+    const [y, m] = key.split('-').map(Number);
+    return new Date(y, m-1, 1).toLocaleDateString('en-US', {month:'long', year:'numeric'});
+  }
+
+  function buildSaleCard(s) {
+    const lines = s.items.map(i=>`<div class="sc-item-line"><b>${esc(i.skuName)}</b> \xd7${i.qty} &mdash; $${i.price*i.qty}</div>`).join('');
+    const bottles = s.discount>0 ? Math.round(s.discount/3) : 0;
+    const discTag = bottles>0?`<span class="tag tdisc">${bottles} bottle${bottles>1?'s':''} returned</span>`:'';
+    const tot = fmtMoney(s.total).slice(1); // strip $ for inline use
+    return `<div class="sale-card">
+      <div class="sc-top"><div class="sc-name">${esc(s.name)}</div><div class="sc-amt">$${tot}${s.discount>0?'<span class="sc-disc-tag">\u2212$'+s.discount+' ('+Math.round(s.discount/3)+' returned)</span>':''}</div></div>
+      <div class="sc-items">${lines}</div>
+      <div class="sc-bot">
+        <div class="sc-tags">
+          <span class="tag tpay" class="tag tpay ${s.pay==='Gift'?'gift':''}">${s.pay}</span>
+          ${discTag}
+          <span class="tag ttime">${s.time}</span>
+        </div>
+        <div class="sc-actions">
+          <button class="edit-btn" onclick="openEditSale(${s.id})">Edit</button>
+          <button class="del-btn" onclick="deleteSale(${s.id})">&#x2715;</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
   function renderHistory() {
     const list = document.getElementById('hist-list');
+    const filterEl = document.getElementById('hist-filter');
+
+    const nowDate   = new Date();
+    const curKey    = nowDate.getFullYear() + '-' + String(nowDate.getMonth()+1).padStart(2,'0');
+
+    // Build sorted unique month keys from all sales
+    const allKeys = [...new Set(state.sales.map(getSaleMonthKey))].sort().reverse();
+
+    // Populate filter dropdown (preserve current selection)
+    const prevSel = filterEl.value;
+    filterEl.innerHTML = '<option value="all">All Time</option>' +
+      allKeys.map(k => `<option value="${k}">${getMonthLabel(k)}</option>`).join('');
+
+    // Set default: current month if present, else "all"
+    if (!prevSel || prevSel === 'current') {
+      filterEl.value = allKeys.includes(curKey) ? curKey : 'all';
+    } else if (prevSel === 'all' || allKeys.includes(prevSel)) {
+      filterEl.value = prevSel;
+    } else {
+      filterEl.value = allKeys.includes(curKey) ? curKey : 'all';
+    }
+
+    const selKey = filterEl.value;
+    const keysToShow = selKey === 'all' ? allKeys : (allKeys.includes(selKey) ? [selKey] : []);
+
     document.getElementById('hist-count').textContent = state.sales.length;
+
     if (!state.sales.length) { list.innerHTML='<div class="empty-state">No sales yet.</div>'; return; }
-    list.innerHTML = state.sales.map(s => {
-      const lines = s.items.map(i=>`<div class="sc-item-line"><b>${esc(i.skuName)}</b> \xd7${i.qty} &mdash; $${i.price*i.qty}</div>`).join('');
-      const bottles = s.discount>0 ? Math.round(s.discount/3) : 0;
-      const discTag = bottles>0?`<span class="tag tdisc">${bottles} bottle${bottles>1?'s':''} returned</span>`:'';
-      const tot = Number.isInteger(s.total)?s.total:s.total.toFixed(2);
-      return `<div class="sale-card">
-        <div class="sc-top"><div class="sc-name">${esc(s.name)}</div><div class="sc-amt">$${tot}${s.discount>0?'<span style="font-size:10px;color:var(--blue);display:block;font-weight:700;text-align:right;">\u2212$'+s.discount+' ('+Math.round(s.discount/3)+' returned)</span>':''}</div></div>
-        <div class="sc-items">${lines}</div>
-        <div class="sc-bot">
-          <div class="sc-tags">
-            <span class="tag tpay" style="${s.pay==='Gift'?'background:rgba(230,255,0,0.15);color:var(--yellow);':''}">${s.pay}</span>
-            ${discTag}
-            <span class="tag ttime">${s.time}</span>
+    if (!keysToShow.length)  { list.innerHTML='<div class="empty-state">No sales for this period.</div>'; return; }
+
+    list.innerHTML = keysToShow.map(key => {
+      const sales = state.sales.filter(s => getSaleMonthKey(s) === key);
+      if (!sales.length) return '';
+      const monthTotal = sales.filter(s=>s.pay!=='Gift').reduce((sum,s)=>sum+(s.total||0),0);
+      const isOpen = (key === curKey);
+      const label  = getMonthLabel(key);
+      const fmtT   = fmtMoney(monthTotal);
+      return `<div class="month-group">
+        <div class="month-group-hdr${isOpen?' open':''}" onclick="toggleMonthGroup(this)">
+          <div class="month-group-left">
+            <span class="month-group-name">${label}</span>
+            <span class="month-group-meta">${sales.length} sale${sales.length!==1?'s':''} &middot; ${fmtT}</span>
           </div>
-          <div class="sc-actions">
-            <button class="edit-btn" onclick="openEditSale(${s.id})">Edit</button>
-            <button class="del-btn" onclick="deleteSale(${s.id})">&#x2715;</button>
-          </div>
+          <span class="month-group-chevron">&#x25BE;</span>
+        </div>
+        <div class="month-group-body" style="${isOpen?'':'display:none'}">
+          ${sales.map(buildSaleCard).join('')}
         </div>
       </div>`;
     }).join('');
+  }
+
+  function toggleMonthGroup(hdr) {
+    const body = hdr.nextElementSibling;
+    const isOpen = hdr.classList.contains('open');
+    hdr.classList.toggle('open', !isOpen);
+    body.style.display = isOpen ? 'none' : 'block';
   }
 
   function deleteSale(id) {
@@ -885,7 +1119,10 @@
     if (!s) return;
     document.getElementById('esm-id').value = id;
     document.getElementById('esm-name').value = s.name;
-    document.getElementById('esm-pay').value = s.pay;
+    // Set payment dropdown — match known values, fallback to Venmo
+    const payOpts = ['Venmo','Cash','Debit/Credit','Gift'];
+    const payVal  = payOpts.includes(s.pay) ? s.pay : (s.pay === 'Card' ? 'Debit/Credit' : 'Venmo');
+    document.getElementById('esm-pay').value = payVal;
     document.getElementById('esm-discount').value = s.discount>0 ? Math.round(s.discount/3) : 0;
     document.getElementById('esm-items-wrap').innerHTML = s.items.map((item,idx)=>`
       <div class="field"><label>${esc(item.skuName)} qty</label>
@@ -925,14 +1162,12 @@
   document.getElementById('sku-modal').addEventListener('click',function(e){if(e.target===this)closeSkuModal();});
   document.getElementById('sale-modal').addEventListener('click',function(e){if(e.target===this)closeSaleModal();});
 
-
   function resetAll() {
     if (!confirm('Reset session? Clears all sales and inventory counts.')) return;
     state.skus.forEach(s=>s.sold=0);
     state.sales=[];
     saveLocal(); logAnother(); renderDashboard(); renderHistory();
   }
-
 
   // ── THEMED CODE GENERATOR ──
   const CODE_THEMES = {
@@ -1063,7 +1298,7 @@
     const countEl = document.getElementById('newsale-pending-count');
     if (!data || !data.length) {
       if (countEl) countEl.textContent = '0';
-      if (list) list.innerHTML = '<div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:8px 0;">No pending orders</div>';
+      if (list) list.innerHTML = '<div class="no-pending-msg">No pending orders</div>';
       return;
     }
     if (countEl) countEl.textContent = data.length;
@@ -1095,7 +1330,7 @@
     document.getElementById('pm-notes').value = order.notes||'';
     document.getElementById('pm-total').textContent = '$' + (order.total||0);
     const items = (order.order_items||[]);
-    document.getElementById('pm-items').innerHTML = '<div style="font-size:9px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Items</div>' +
+    document.getElementById('pm-items').innerHTML = '<div class="modal-items-label">Items</div>' +
       items.map(i => `<div class="pending-modal-item"><span class="pk">${esc(i.sku_name)}</span><span class="pv">×${i.qty} &mdash; $${i.price*i.qty}</span></div>`).join('');
     document.getElementById('pending-modal').classList.add('open');
   }
@@ -1107,7 +1342,7 @@
 
   async function confirmPendingOrder() {
     if (!pendingModalOrder) return;
-    const pay = document.getElementById('pm-pay').value.trim() || 'Confirmed';
+    const pay = document.getElementById('pm-pay').value || 'Venmo';
     const id = pendingModalOrder.id;
     const o = pendingModalOrder;
 
@@ -1254,7 +1489,7 @@
     if (state.skus.length || state.sales.length) {
       renderDashboard(); renderSaleForm(); renderHistory();
     } else {
-      document.getElementById('inv-grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Loading...</div>';
+      document.getElementById('inv-grid').innerHTML = '<div class="inv-loading">Loading...</div>';
     }
   } catch(e) {}
 
