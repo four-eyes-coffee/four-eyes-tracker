@@ -53,7 +53,20 @@
   /* REVENUE */
   .rev-card { background:var(--yellow); color:var(--black); border-radius:3px; padding:18px 16px; }
   .rev-title { font-size:9px; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:rgba(0,0,0,0.45); margin-bottom:12px; }
-  .rev-row { display:flex; justify-content:space-between; margin-bottom:5px; font-size:12px; font-weight:500; }
+  .rev-stat-row { display:flex; align-items:stretch; gap:0; margin-bottom:0; }
+  .rev-stat { flex:1; padding:4px 0 12px; }
+  .rev-stat:last-child { text-align:right; }
+  .rev-stat-divider { width:1px; background:rgba(0,0,0,0.12); margin:0 16px; }
+  .rev-stat-label { font-size:9px; font-weight:900; letter-spacing:2.5px; text-transform:uppercase; color:rgba(0,0,0,0.45); margin-bottom:6px; }
+  .rev-stat-value { font-size:26px; font-weight:900; letter-spacing:-0.5px; line-height:1; color:var(--black); }
+  .rev-stat-sub { font-size:10px; font-weight:700; color:rgba(0,0,0,0.4); margin-top:4px; letter-spacing:0.5px; display:flex; align-items:center; gap:4px; }
+  .rev-stat:last-child .rev-stat-sub { justify-content:flex-end; }
+  .trend-up   { color:#00a846; }
+  .trend-down { color:#1a33cc; }
+  .rev-div--top { margin-top:12px; margin-bottom:12px; }
+  .rev-row { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; font-size:12px; font-weight:500; gap:8px; }
+  .rev-row-meta { display:block; font-size:10px; color:rgba(0,0,0,0.45); font-weight:500; margin-top:1px; }
+  .rev-row-gift { color:rgba(0,0,0,0.4); }
   .rev-row .n { color:rgba(0,0,0,0.55); }
   .rev-row .a { font-weight:700; }
   .rev-div { border:none; border-top:1px solid rgba(0,0,0,0.15); margin:10px 0; }
@@ -163,14 +176,7 @@
   .modal-del { width:100%; padding:11px; background:transparent; border:2px solid rgba(255,255,255,0.1); border-radius:3px; font-family:'Rubik',sans-serif; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); cursor:pointer; margin-top:8px; }
   .modal-del:active { border-color:var(--yellow); color:var(--yellow); }
 
-  /* DASHBOARD STAT MINI-CARDS */
-  .dash-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
-  .dash-stat { background:var(--card); border:1.5px solid var(--border); border-radius:3px; padding:14px 12px; }
-  .dash-stat-label { font-size:9px; font-weight:900; letter-spacing:2.5px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
-  .dash-stat-value { font-size:26px; font-weight:900; letter-spacing:-0.5px; line-height:1; }
-  .dash-stat-sub { font-size:9px; font-weight:700; color:var(--muted); margin-top:5px; letter-spacing:0.5px; display:flex; align-items:center; gap:4px; }
-  .trend-up   { color:#00c853; }
-  .trend-down { color:var(--blue); }
+  /* DASHBOARD STAT MINI-CARDS — merged into rev-card */
 
   /* HISTORY FILTER */
   .hist-filter-wrap { margin-bottom:14px; }
@@ -372,20 +378,21 @@
   </div>
   <div class="inv-grid" id="inv-grid"></div>
   <div class="sec-row"><span class="sec-label">Revenue</span></div>
-  <div class="dash-stats">
-    <div class="dash-stat">
-      <div class="dash-stat-label">Annual Total</div>
-      <div class="dash-stat-value" id="dash-annual">$0</div>
-      <div class="dash-stat-sub" id="dash-annual-sub">all sales</div>
-    </div>
-    <div class="dash-stat">
-      <div class="dash-stat-label">This Month</div>
-      <div class="dash-stat-value" id="dash-month">$0</div>
-      <div class="dash-stat-sub" id="dash-month-sub">loading...</div>
-    </div>
-  </div>
   <div class="rev-card">
-    <div class="rev-title">Sales Total</div>
+    <div class="rev-stat-row">
+      <div class="rev-stat">
+        <div class="rev-stat-label">Annual Total</div>
+        <div class="rev-stat-value" id="dash-annual">$0</div>
+        <div class="rev-stat-sub" id="dash-annual-sub">all sales</div>
+      </div>
+      <div class="rev-stat-divider"></div>
+      <div class="rev-stat">
+        <div class="rev-stat-label">This Month</div>
+        <div class="rev-stat-value" id="dash-month">$0</div>
+        <div class="rev-stat-sub" id="dash-month-sub">loading...</div>
+      </div>
+    </div>
+    <hr class="rev-div rev-div--top">
     <div id="rev-rows"></div>
     <hr class="rev-div">
     <div class="rev-total"><span class="l">Net</span><span class="v" id="total-rev">$0</span></div>
@@ -780,15 +787,26 @@
       });
     });
 
-    // Revenue rows — paid only
-    let gross = 0;
+    // Revenue rows — paid SKU breakdown + gifted counts
+    const totalDiscounts = paidSales.reduce((sum, s) => sum + (s.discount || 0), 0);
+    const netRevenue     = paidSales.reduce((sum, s) => sum + (s.total || 0), 0);
+
     const revRowsHtml = state.skus.map(sku => {
-      const r = paidSkuTotals[sku.id] || 0;
-      gross += r;
-      return `<div class="rev-row"><span class="n">${esc(sku.name)}</span><span class="a">${fmtMoney(r)}</span></div>`;
-    }).join('');
-    document.getElementById('rev-rows').innerHTML = revRowsHtml;
-    document.getElementById('total-rev').textContent = fmtMoney(gross);
+      const soldQty  = paidSales.reduce((sum,s) => sum + (s.items||[]).filter(i=>i.skuId===sku.id).reduce((a,i)=>a+i.qty,0), 0);
+      const giftQty  = giftSales.reduce((sum,s) => sum + (s.items||[]).filter(i=>i.skuId===sku.id).reduce((a,i)=>a+i.qty,0), 0);
+      const skuRev   = paidSkuTotals[sku.id] || 0;
+      if (soldQty === 0 && giftQty === 0) return '';
+      const giftBit  = giftQty > 0 ? ` <span class="rev-row-gift">· ${giftQty} gifted</span>` : '';
+      return `<div class="rev-row">
+        <span class="n">${esc(sku.name)}<span class="rev-row-meta">${soldQty} sold${giftBit}</span></span>
+        <span class="a">${fmtMoney(skuRev)}</span>
+      </div>`;
+    }).filter(Boolean).join('');
+    document.getElementById('rev-rows').innerHTML = revRowsHtml
+      || '<div class="rev-row"><span class="n" style="opacity:.45">No paid sales yet</span></div>';
+
+    // Net = gross sales minus bottle return discounts (consistent with Annual Total)
+    document.getElementById('total-rev').textContent = fmtMoney(netRevenue);
 
     // Gift line — only show if gifts exist
     const totalGiftQty = Object.values(giftSkuQty).reduce((a,b)=>a+b, 0);
@@ -799,7 +817,7 @@
           return sum + (giftSkuQty[sku.id]||0) * sku.price;
         }, 0);
         giftEl.style.display = 'flex';
-        giftEl.innerHTML = `<span class="gift-qty-label">&#x1F381; \${totalGiftQty} bottle\${totalGiftQty>1?'s':''} gifted</span><span class="gift-val-label">$\${giftVal} value</span>`;
+        giftEl.innerHTML = `<span class="gift-qty-label">&#x1F381; ${totalGiftQty} bottle${totalGiftQty>1?'s':''} gifted</span><span class="gift-val-label">${fmtMoney(giftVal)} value</span>`;
       } else {
         giftEl.style.display = 'none';
       }
