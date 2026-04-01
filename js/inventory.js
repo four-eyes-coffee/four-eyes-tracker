@@ -3,21 +3,6 @@
    SKU inventory management. Moved here from the old dashboard.
    ============================================================ */
 
-function initInventory() {
-  const panel = document.getElementById('inner-inventory');
-  if (!panel) return;
-
-  panel.innerHTML = `
-    <div class="sec-row" style="margin-top:8px;">
-      <span class="sec-label">Flavors &amp; Stock</span>
-      <button class="sec-action" onclick="openAddSku()">+ New Flavor</button>
-    </div>
-    <div class="inv-grid" id="inv-grid">
-      <div class="inv-loading">Loading...</div>
-    </div>
-  `;
-}
-
 function renderInventory() {
   const grid = document.getElementById('inv-grid');
   if (!grid) return;
@@ -156,4 +141,3 @@ if (_skuModal) {
   });
 }
 
-// initInventory() called from index.html after all scripts load

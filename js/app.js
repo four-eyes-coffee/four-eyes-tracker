@@ -187,7 +187,7 @@ async function checkForUpdate() {
   if (btn) btn.disabled = true;
 
   try {
-    const res   = await fetch(location.href + '?v=' + Date.now(), { cache: 'no-store' });
+    const res   = await fetch('js/app.js?v=' + Date.now(), { cache: 'no-store' });
     const text  = await res.text();
     const match = text.match(/APP_VERSION = '([^']+)'/);
     const live  = match ? match[1] : null;
@@ -262,7 +262,7 @@ async function appLoadData() {
 
 setTimeout(async () => {
   try {
-    const res   = await fetch(location.href + '?v=' + Date.now(), { cache: 'no-store' });
+    const res   = await fetch('js/app.js?v=' + Date.now(), { cache: 'no-store' });
     const text  = await res.text();
     const match = text.match(/APP_VERSION = '([^']+)'/);
     if (match && match[1] !== APP_VERSION) {

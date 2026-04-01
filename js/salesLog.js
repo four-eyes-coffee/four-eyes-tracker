@@ -3,26 +3,6 @@
    Sales history: month filter, accordion groups, edit, delete.
    ============================================================ */
 
-function initSalesLog() {
-  const panel = document.getElementById('inner-saleslog');
-  if (!panel) return;
-
-  panel.innerHTML = `
-    <div class="hist-header" style="margin-top:8px;">
-      <span class="hist-title">Sales History</span>
-      <span class="hist-count" id="hist-count">0</span>
-    </div>
-    <div class="hist-filter-wrap">
-      <select class="hist-filter" id="hist-filter" onchange="renderHistory()">
-        <option value="current">This Month</option>
-      </select>
-    </div>
-    <div id="hist-list">
-      <div class="empty-state">No sales yet.</div>
-    </div>
-  `;
-}
-
 // ── Sale card builder ─────────────────────────────────────────────
 
 function buildSaleCard(s) {
@@ -240,4 +220,3 @@ if (_saleModal) {
   });
 }
 
-// initSalesLog() called from index.html after all scripts load

@@ -10,69 +10,6 @@ let formPay          = null;
 let formReturns      = 0;
 let pendingModalOrder = null;
 
-function initNewSale() {
-  const panel = document.getElementById('panel-newsale');
-  if (!panel) return;
-
-  panel.innerHTML = `
-    <!-- Sale entry form -->
-    <div id="sale-form-wrap">
-      <div class="sale-form">
-        <div class="fsec">Customer</div>
-        <div class="field">
-          <input type="text" id="f-name" placeholder="First name or handle" autocomplete="off">
-        </div>
-
-        <div class="fsec">Items</div>
-        <div class="items-list"  id="items-list"></div>
-        <div class="flavor-picker" id="flavor-picker"></div>
-
-        <div class="fsec">Payment</div>
-        <div class="pay-pills">
-          <button class="pay-pill" onclick="selectPay('Cash',this)">Cash</button>
-          <button class="pay-pill" onclick="selectPay('Venmo',this)">Venmo</button>
-          <button class="pay-pill" onclick="selectPay('Zelle',this)">Zelle</button>
-          <button class="pay-pill" onclick="selectPay('Card',this)">Card</button>
-          <button class="pay-pill" onclick="selectPay('Gift',this)">Gift</button>
-        </div>
-
-        <div class="fsec">Bottles Returned</div>
-        <div class="discount-row">
-          <button class="ibtn" onclick="changeReturns(-1)" type="button">&#x2212;</button>
-          <span class="item-qty f-returns" id="f-returns">0</span>
-          <button class="ibtn" onclick="changeReturns(1)"  type="button">+</button>
-          <span class="returns-hint">&#x2212;$3 each</span>
-        </div>
-
-        <div class="order-summary">
-          <span class="ol">Total</span>
-          <span class="ov" id="order-total">$0</span>
-        </div>
-        <button class="submit-btn" onclick="logSale()">Log Sale</button>
-      </div>
-    </div>
-
-    <!-- Sale confirmed state -->
-    <div class="sale-success" id="sale-success">
-      <div class="si">&#x2713;</div>
-      <div class="sm" id="success-name"></div>
-      <div class="ss" id="success-detail"></div>
-      <button class="log-again-btn"   onclick="logAnother()">+ Log Another Sale</button>
-      <button class="see-history-btn" onclick="switchTab('history')">View History</button>
-    </div>
-
-    <!-- Pending pre-orders (always shown at bottom) -->
-    <div class="section-divider"></div>
-    <div class="pending-header-row">
-      <span class="sec-label">Pending Orders</span>
-      <span class="hist-count" id="newsale-pending-count">0</span>
-    </div>
-    <div id="newsale-pending-list">
-      <div class="no-pending-msg">No pending orders</div>
-    </div>
-  `;
-}
-
 // ── Flavor picker + cart rendering ───────────────────────────────
 
 function renderSaleForm() {
@@ -393,4 +330,3 @@ if (_pendingModal) {
   });
 }
 
-// initNewSale() called from index.html after all scripts load
