@@ -239,7 +239,8 @@ async function refreshApp() {
 // ── Data loading ──────────────────────────────────────────────────
 
 async function appLoadData() {
-  const refreshLabel = document.getElementById('refresh-label');
+  const statusEl = document.getElementById('db-status');
+  if (statusEl) statusEl.textContent = 'Connecting to Supabase...';
 
   try {
     const { skus, orders } = await dbLoad();
@@ -250,7 +251,7 @@ async function appLoadData() {
     }
     state.orders = orders;
 
-    // Pending counts — non-blocking, don't let it fail the whole load
+    // Pending counts — non-blocking
     try {
       state.pendingQty = await dbLoadPendingCounts();
     } catch(e) {
@@ -259,17 +260,20 @@ async function appLoadData() {
 
     saveLocal();
 
+    if (statusEl) {
+      statusEl.textContent = `✓ Connected · ${state.skus.length} SKU${state.skus.length !== 1 ? 's' : ''} · ${state.orders.length} order${state.orders.length !== 1 ? 's' : ''}`;
+      statusEl.style.color = 'var(--yellow)';
+    }
+
   } catch(e) {
     console.error('Supabase load failed:', e.message || e);
-    // Show the error visibly on the dashboard refresh button
-    if (refreshLabel) {
-      refreshLabel.textContent = 'Load failed — tap to retry';
-      setTimeout(() => { refreshLabel.textContent = 'Refresh Data'; }, 4000);
+    if (statusEl) {
+      statusEl.textContent = `✗ Load failed: ${e.message || 'unknown error'} — tap Refresh`;
+      statusEl.style.color = '#ff4444';
     }
-    // Still render with whatever state we have (cache or empty)
   }
 
-  // Always render — worst case shows cache or empty state
+  // Always render with whatever state we have
   if (typeof renderDashboard       === 'function') renderDashboard();
   if (typeof renderInventory       === 'function') renderInventory();
   if (typeof renderHistory         === 'function') renderHistory();

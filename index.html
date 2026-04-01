@@ -12,7 +12,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=2">
+  <link rel="stylesheet" href="css/styles.css?v=3">
 </head>
 <body>
 
@@ -54,6 +54,11 @@
 
 <!-- ── DASHBOARD ──────────────────────────────────────────────── -->
 <div class="panel active" id="panel-dashboard">
+
+  <!-- Supabase connection status — helps diagnose load issues -->
+  <div id="db-status" style="background:rgba(255,255,255,0.06); border:1.5px solid var(--border); border-radius:3px; padding:8px 14px; margin-bottom:14px; font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted);">
+    Connecting...
+  </div>
 
   <div class="sec-row" style="margin-top:0;">
     <span class="sec-label">Revenue</span>
@@ -422,16 +427,16 @@
 </div>
 
 <!-- ── Scripts ────────────────────────────────────────────────── -->
-<script src="js/supabase.js?v=2"></script>
-<script src="js/app.js?v=2"></script>
-<script src="js/dashboard.js?v=2"></script>
-<script src="js/newSale.js?v=2"></script>
-<script src="js/history/salesLog.js?v=2"></script>
-<script src="js/history/reconcile.js?v=2"></script>
-<script src="js/storeHub/inventory.js?v=2"></script>
-<script src="js/storeHub/cogs.js?v=2"></script>
-<script src="js/storeHub/dropCodes.js?v=2"></script>
-<script src="js/storeHub/fulfillment.js?v=2"></script>
+<script src="js/supabase.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
+<script src="js/dashboard.js?v=3"></script>
+<script src="js/newSale.js?v=3"></script>
+<script src="js/history/salesLog.js?v=3"></script>
+<script src="js/history/reconcile.js?v=3"></script>
+<script src="js/storeHub/inventory.js?v=3"></script>
+<script src="js/storeHub/cogs.js?v=3"></script>
+<script src="js/storeHub/dropCodes.js?v=3"></script>
+<script src="js/storeHub/fulfillment.js?v=3"></script>
 
 <script>
   // All scripts and DOM elements are loaded at this point.
