@@ -212,11 +212,5 @@ function closeSaleModal() {
   document.getElementById('sale-modal').classList.remove('open');
 }
 
-// Backdrop click to close
-const _saleModal = document.getElementById('sale-modal');
-if (_saleModal) {
-  _saleModal.addEventListener('click', function(e) {
-    if (e.target === this) closeSaleModal();
-  });
-}
+
 

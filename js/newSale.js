@@ -322,11 +322,5 @@ async function declinePendingOrder() {
   renderDashboard();
 }
 
-// Backdrop click to close pending modal
-const _pendingModal = document.getElementById('pending-modal');
-if (_pendingModal) {
-  _pendingModal.addEventListener('click', function(e) {
-    if (e.target === this) closePendingModal();
-  });
-}
+
 

@@ -16,14 +16,14 @@ function renderDashboard() {
   const giftOrders = state.orders.filter(o => o.pay === 'Gift');
 
   // ── Annual + monthly totals ──────────────────────────────────
-  const annualTotal    = paidOrders.reduce((s, o) => s + (o.total || 0), 0);
+  const totalRevenue   = paidOrders.reduce((s, o) => s + (o.total || 0), 0);
   const curMonthTotal  = paidOrders.filter(o => getSaleMonthKey(o) === curKey)
                                    .reduce((s, o) => s + (o.total || 0), 0);
   const prevMonthTotal = paidOrders.filter(o => getSaleMonthKey(o) === prevKey)
                                    .reduce((s, o) => s + (o.total || 0), 0);
 
   const annualEl = document.getElementById('dash-annual');
-  if (annualEl) annualEl.textContent = fmtMoney(annualTotal);
+  if (annualEl) annualEl.textContent = fmtMoney(totalRevenue);
 
   const monthEl = document.getElementById('dash-month');
   if (monthEl) monthEl.textContent = fmtMoney(curMonthTotal);
@@ -76,9 +76,8 @@ function renderDashboard() {
   }
 
   // ── Net total ────────────────────────────────────────────────
-  const netRevenue = paidOrders.reduce((s, o) => s + (o.total || 0), 0);
   const totalRevEl = document.getElementById('total-rev');
-  if (totalRevEl) totalRevEl.textContent = fmtMoney(netRevenue);
+  if (totalRevEl) totalRevEl.textContent = fmtMoney(totalRevenue);
 
   // ── Gift line ────────────────────────────────────────────────
   const giftQtyMap = {};
@@ -129,7 +128,5 @@ function renderDashboard() {
     }
   }
 
-  // Keep inventory in sync whenever dashboard re-renders
-  if (typeof renderInventory === 'function') renderInventory();
 }
 

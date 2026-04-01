@@ -133,11 +133,5 @@ function closeSkuModal() {
   document.getElementById('sku-modal').classList.remove('open');
 }
 
-// Backdrop click to close
-const _skuModal = document.getElementById('sku-modal');
-if (_skuModal) {
-  _skuModal.addEventListener('click', function(e) {
-    if (e.target === this) closeSkuModal();
-  });
-}
+
 

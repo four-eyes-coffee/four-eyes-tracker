@@ -309,17 +309,8 @@ setTimeout(async () => {
   // PIN: restore session if already unlocked
   pinCheckSession();
 
-  // Hydrate from localStorage so the screen isn't blank while
-  // Supabase loads — gives instant perceived performance
+  // Hydrate state from localStorage (gives instant cache while Supabase loads)
   loadLocal();
-  if (state.skus.length || state.orders.length) {
-    if (typeof renderDashboard === 'function') renderDashboard();
-    if (typeof renderSaleForm  === 'function') renderSaleForm();
-    if (typeof renderHistory   === 'function') renderHistory();
-  } else {
-    const grid = document.getElementById('inv-grid');
-    if (grid) grid.innerHTML = '<div class="inv-loading">Loading...</div>';
-  }
 
   // Wait for Supabase CDN, then init and pull live data
   function waitForSupabase(cb, attempts = 0) {
