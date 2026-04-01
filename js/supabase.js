@@ -80,7 +80,9 @@ async function dbLoadOrders() {
     pay:       o.pay_method,
     discount:  parseFloat(o.discount) || 0,
     total:     parseFloat(o.total) || 0,
-    time:      new Date(o.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+    time:      o.created_at
+                 ? new Date(o.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                 : '—',
     createdAt: o.created_at   // preserved for correct month-key calculation
   }));
 }

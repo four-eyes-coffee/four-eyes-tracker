@@ -239,18 +239,37 @@ async function refreshApp() {
 // ── Data loading ──────────────────────────────────────────────────
 
 async function appLoadData() {
-  const { skus, orders } = await dbLoad();
+  const refreshLabel = document.getElementById('refresh-label');
 
-  if (skus.length) {
-    state.skus = skus;
-    state.nextSkuId = Math.max(...skus.map(s => s.id)) + 1;
+  try {
+    const { skus, orders } = await dbLoad();
+
+    if (skus.length) {
+      state.skus      = skus;
+      state.nextSkuId = Math.max(...skus.map(s => s.id)) + 1;
+    }
+    state.orders = orders;
+
+    // Pending counts — non-blocking, don't let it fail the whole load
+    try {
+      state.pendingQty = await dbLoadPendingCounts();
+    } catch(e) {
+      console.warn('Pending counts failed (non-fatal):', e);
+    }
+
+    saveLocal();
+
+  } catch(e) {
+    console.error('Supabase load failed:', e.message || e);
+    // Show the error visibly on the dashboard refresh button
+    if (refreshLabel) {
+      refreshLabel.textContent = 'Load failed — tap to retry';
+      setTimeout(() => { refreshLabel.textContent = 'Refresh Data'; }, 4000);
+    }
+    // Still render with whatever state we have (cache or empty)
   }
-  state.orders     = orders;
-  state.pendingQty = await dbLoadPendingCounts();
 
-  saveLocal();
-
-  // Re-render all active modules
+  // Always render — worst case shows cache or empty state
   if (typeof renderDashboard       === 'function') renderDashboard();
   if (typeof renderInventory       === 'function') renderInventory();
   if (typeof renderHistory         === 'function') renderHistory();

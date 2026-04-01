@@ -15,7 +15,7 @@
   --border: rgba(255, 255, 255, 0.12);
   --muted:  rgba(255, 255, 255, 0.35);
 
-  --nav-height: 76px;
+  --nav-height: 82px;
   --header-height: 66px;
 }
 
@@ -137,7 +137,7 @@ header {
 }
 
 .inner-tab {
-  padding: 12px 0;
+  padding: 14px 0;
   margin-right: 20px;
   border: none;
   background: transparent;
