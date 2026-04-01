@@ -98,7 +98,8 @@ function switchTab(name) {
     if (typeof loadPendingForNewSale === 'function') loadPendingForNewSale();
   }
   if (name === 'storehub') {
-    if (typeof loadActiveCode === 'function') loadActiveCode();
+    if (typeof loadActiveCode   === 'function') loadActiveCode();
+    if (typeof renderInventory  === 'function') renderInventory();
   }
   if (name === 'history') {
     if (typeof renderHistory === 'function') renderHistory();
@@ -250,10 +251,11 @@ async function appLoadData() {
   saveLocal();
 
   // Re-render all active modules
-  if (typeof renderDashboard      === 'function') renderDashboard();
-  if (typeof renderHistory        === 'function') renderHistory();
-  if (typeof renderSaleForm       === 'function') renderSaleForm();
-  if (typeof loadPendingForNewSale === 'function') loadPendingForNewSale();
+  if (typeof renderDashboard       === 'function') renderDashboard();
+  if (typeof renderInventory       === 'function') renderInventory();
+  if (typeof renderHistory         === 'function') renderHistory();
+  if (typeof renderSaleForm        === 'function') renderSaleForm();
+  if (typeof loadPendingForNewSale  === 'function') loadPendingForNewSale();
 }
 
 // ── Silent background update check (3s after load) ───────────────
