@@ -260,13 +260,13 @@ async function loadPendingForNewSale() {
 
     list.innerHTML = pending.map(o => {
       const lines = (o.order_items || []).map(i => `${esc(i.sku_name)} ×${i.qty}`).join(', ');
-      const window = o.fulfillment_type
+      const windowLabel = o.fulfillment_type
         ? esc(o.fulfillment_type) + (o.fulfillment_window ? ' · ' + esc(o.fulfillment_window) : '')
         : '';
       return `<div class="pending-card">
         <div class="pending-card-top">
           <div class="pending-name">${esc(o.customer_name || '—')}</div>
-          <div class="pending-window">${window}</div>
+          <div class="pending-window">${windowLabel}</div>
         </div>
         <div class="pending-items">${lines}</div>
         <div class="pending-actions">
@@ -386,9 +386,11 @@ async function declinePendingOrder() {
 }
 
 // Backdrop click to close pending modal
-document.getElementById('pending-modal').addEventListener('click', function(e) {
-  if (e.target === this) closePendingModal();
-});
+const _pendingModal = document.getElementById('pending-modal');
+if (_pendingModal) {
+  _pendingModal.addEventListener('click', function(e) {
+    if (e.target === this) closePendingModal();
+  });
+}
 
-// ── Init on script load ───────────────────────────────────────────
-initNewSale();
+// initNewSale() called from index.html after all scripts load

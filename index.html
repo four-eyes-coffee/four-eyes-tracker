@@ -281,5 +281,16 @@
 <script src="js/storeHub/dropCodes.js"></script>
 <script src="js/storeHub/fulfillment.js"></script>
 
+<script>
+  // All module scripts are loaded — initialize panels in order.
+  // Doing this here guarantees every function and every DOM element
+  // exists before any init runs.
+  initDashboard();
+  initNewSale();
+  initSalesLog();
+  initInventory();
+  initDropCodes();
+</script>
+
 </body>
 </html>

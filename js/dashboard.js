@@ -200,5 +200,4 @@ function renderDashboard() {
   if (typeof renderInventory === 'function') renderInventory();
 }
 
-// ── Init on script load ───────────────────────────────────────────
-initDashboard();
+// initDashboard() called from index.html after all scripts load

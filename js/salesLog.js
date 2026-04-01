@@ -233,9 +233,11 @@ function closeSaleModal() {
 }
 
 // Backdrop click to close
-document.getElementById('sale-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeSaleModal();
-});
+const _saleModal = document.getElementById('sale-modal');
+if (_saleModal) {
+  _saleModal.addEventListener('click', function(e) {
+    if (e.target === this) closeSaleModal();
+  });
+}
 
-// ── Init on script load ───────────────────────────────────────────
-initSalesLog();
+// initSalesLog() called from index.html after all scripts load

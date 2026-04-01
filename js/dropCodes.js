@@ -146,5 +146,4 @@ async function deactivateCode() {
   }
 }
 
-// ── Init on script load ───────────────────────────────────────────
-initDropCodes();
+// initDropCodes() called from index.html after all scripts load

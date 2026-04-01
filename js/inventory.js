@@ -149,9 +149,11 @@ function closeSkuModal() {
 }
 
 // Backdrop click to close
-document.getElementById('sku-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeSkuModal();
-});
+const _skuModal = document.getElementById('sku-modal');
+if (_skuModal) {
+  _skuModal.addEventListener('click', function(e) {
+    if (e.target === this) closeSkuModal();
+  });
+}
 
-// ── Init on script load ───────────────────────────────────────────
-initInventory();
+// initInventory() called from index.html after all scripts load
