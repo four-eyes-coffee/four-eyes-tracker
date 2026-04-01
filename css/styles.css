@@ -92,6 +92,8 @@ header {
   transition: color 0.15s;
   -webkit-tap-highlight-color: transparent;
   padding: 0;
+  padding-top: 16px;
+  padding-bottom: 0;
 }
 
 .nav-item::before {
