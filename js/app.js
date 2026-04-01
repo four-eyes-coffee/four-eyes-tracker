@@ -3,7 +3,7 @@
    Routing · shared state · utilities · PIN · boot sequence
    ============================================================ */
 
-const APP_VERSION = '20260331-0001'; // auto-updated on each deploy
+const APP_VERSION = '20260331-phase3'; // auto-updated on each deploy
 
 // ── Shared state ──────────────────────────────────────────────────
 // Single source of truth. All modules read/write this object.
@@ -189,7 +189,7 @@ async function checkForUpdate() {
   try {
     const res   = await fetch('js/app.js?v=' + Date.now(), { cache: 'no-store' });
     const text  = await res.text();
-    const match = text.match(/APP_VERSION = '([^']+)'/);
+    const match = text.match(/APP_VERSION = '[^']+'/);
     const live  = match ? match[1] : null;
 
     if (!live) {
@@ -287,7 +287,7 @@ setTimeout(async () => {
   try {
     const res   = await fetch('js/app.js?v=' + Date.now(), { cache: 'no-store' });
     const text  = await res.text();
-    const match = text.match(/APP_VERSION = '([^']+)'/);
+    const match = text.match(/APP_VERSION = '[^']+'/);
     if (match && match[1] !== APP_VERSION) {
       const headerBtn = document.getElementById('update-btn');
       const appBtn    = document.getElementById('update-app-btn');
