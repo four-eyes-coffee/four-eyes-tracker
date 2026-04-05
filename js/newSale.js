@@ -4,10 +4,9 @@
    Also handles pending order approval from order.html.
    ============================================================ */
 
-// Module-level cart state
-let cart             = [];
-let formPay          = null;
-let formReturns      = 0;
+let cart              = [];
+let formPay           = null;
+let formReturns       = 0;
 let pendingModalOrder = null;
 
 // ── Flavor picker + cart rendering ───────────────────────────────
@@ -69,9 +68,9 @@ function addToCart(skuId) {
 }
 
 function changeQty(skuId, delta) {
-  const item     = cart.find(c => c.skuId === skuId);
+  const item = cart.find(c => c.skuId === skuId);
   if (!item) return;
-  const sku      = state.skus.find(s => s.id === skuId);
+  const sku    = state.skus.find(s => s.id === skuId);
   const maxAvail = sku ? (sku.stock - sku.sold) : 99;
   const newQty   = item.qty + delta;
   if (newQty < 1)        { removeFromCart(skuId); return; }
@@ -119,8 +118,8 @@ function updateOrderTotal() {
 
 async function logSale() {
   const name = document.getElementById('f-name').value.trim();
-  if (!name)        { alert('Enter a customer name.'); return; }
-  if (!cart.length) { alert('Add at least one item.');  return; }
+  if (!name)        { alert('Enter a customer name.');    return; }
+  if (!cart.length) { alert('Add at least one item.');    return; }
   if (!formPay)     { alert('Select a payment method.'); return; }
 
   const disc     = formReturns * 3;
@@ -130,10 +129,13 @@ async function logSale() {
   }, 0);
   const total = formPay === 'Gift' ? 0 : Math.max(0, subtotal - disc);
 
-  // Deduct sold counts immediately (optimistic)
+  // Deduct sold counts optimistically and persist to Supabase
   cart.forEach(item => {
     const sku = state.skus.find(s => s.id === item.skuId);
-    if (sku) sku.sold += item.qty;
+    if (sku) {
+      sku.sold += item.qty;
+      dbUpdateSkuSold(sku.id, sku.sold).catch(e => console.error('Update sold failed:', e));
+    }
   });
 
   const now  = new Date();
@@ -154,13 +156,11 @@ async function logSale() {
   state.orders.unshift(sale);
   saveLocal();
 
-  // Non-blocking Supabase write — show success immediately
   dbSaveOrder(sale).catch(e => console.error('Save order failed:', e));
 
   renderDashboard();
   if (typeof renderHistory === 'function') renderHistory();
 
-  // Show success state
   document.getElementById('sale-form-wrap').style.display = 'none';
   document.getElementById('sale-success').classList.add('show');
   document.getElementById('success-name').textContent = `${name} — ${fmtMoney(total)}`;
@@ -171,8 +171,8 @@ async function logSale() {
 
 function logAnother() {
   cart = []; formPay = null; formReturns = 0;
-  document.getElementById('f-name').value      = '';
-  document.getElementById('f-returns').textContent = '0';
+  document.getElementById('f-name').value           = '';
+  document.getElementById('f-returns').textContent  = '0';
   document.querySelectorAll('.pay-pill').forEach(p => p.classList.remove('selected'));
   document.getElementById('sale-form-wrap').style.display = 'block';
   document.getElementById('sale-success').classList.remove('show');
@@ -271,20 +271,19 @@ function closePendingModal() {
 
 async function confirmPendingOrder() {
   if (!pendingModalOrder) return;
-  const pay = document.getElementById('pm-pay').value || 'Venmo';
-  const o   = pendingModalOrder;
+  const pay   = document.getElementById('pm-pay').value || 'Venmo';
+  const o     = pendingModalOrder;
   const items = o.order_items || [];
 
-  // Deduct inventory (optimistic)
-  for (const item of items) {
+  // Deduct inventory optimistically and persist to Supabase
+  items.forEach(item => {
     const sku = state.skus.find(s => s.id === item.sku_id);
     if (sku) {
       sku.sold += item.qty;
-      dbUpdateSkuSold(sku.id, sku.sold).catch(e => console.error(e));
+      dbUpdateSkuSold(sku.id, sku.sold).catch(e => console.error('Update sold failed:', e));
     }
-  }
+  });
 
-  // Add to local state as a completed order
   const sale = {
     id:        o.id,
     name:      o.customer_name || '—',
@@ -303,7 +302,7 @@ async function confirmPendingOrder() {
   state.orders.unshift(sale);
   saveLocal();
 
-  dbConfirmPendingOrder(o.id, pay).catch(e => console.error(e));
+  dbConfirmPendingOrder(o.id, pay).catch(e => console.error('Confirm pending failed:', e));
 
   closePendingModal();
   loadPendingForNewSale();
@@ -321,6 +320,3 @@ async function declinePendingOrder() {
   state.pendingQty = await dbLoadPendingCounts();
   renderDashboard();
 }
-
-
-

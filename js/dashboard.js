@@ -4,24 +4,44 @@
    ============================================================ */
 
 function renderDashboard() {
-  const now        = new Date();
-  const curMonth   = now.getMonth();
-  const curYear    = now.getFullYear();
-  const curKey     = curYear + '-' + String(curMonth + 1).padStart(2, '0');
-  const prevMonth  = curMonth === 0 ? 11 : curMonth - 1;
-  const prevYear   = curMonth === 0 ? curYear - 1 : curYear;
-  const prevKey    = prevYear + '-' + String(prevMonth + 1).padStart(2, '0');
+  const now     = new Date();
+  const curKey  = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevKey  = prevDate.getFullYear() + '-' + String(prevDate.getMonth() + 1).padStart(2, '0');
 
-  const paidOrders = state.orders.filter(o => o.pay !== 'Gift');
-  const giftOrders = state.orders.filter(o => o.pay === 'Gift');
+  // ── Single-pass SKU stats ────────────────────────────────────
+  // Build per-SKU sold/gifted/revenue from orders in one iteration
+  // rather than triple-filtering paidOrders per SKU.
+  const skuStats = {}; // { skuId: { soldQty, giftQty, rev } }
+  let totalRevenue  = 0;
+  let curMonthTotal = 0;
+  let prevMonthTotal = 0;
+  let totalPaidCount = 0;
+
+  state.orders.forEach(o => {
+    const isGift   = o.pay === 'Gift';
+    const monthKey = getSaleMonthKey(o);
+    const total    = o.total || 0;
+
+    if (!isGift) {
+      totalRevenue  += total;
+      totalPaidCount++;
+      if (monthKey === curKey)  curMonthTotal  += total;
+      if (monthKey === prevKey) prevMonthTotal += total;
+    }
+
+    (o.items || []).forEach(i => {
+      if (!skuStats[i.skuId]) skuStats[i.skuId] = { soldQty: 0, giftQty: 0, rev: 0 };
+      if (isGift) {
+        skuStats[i.skuId].giftQty += i.qty;
+      } else {
+        skuStats[i.skuId].soldQty += i.qty;
+        skuStats[i.skuId].rev    += i.qty * i.price;
+      }
+    });
+  });
 
   // ── Annual + monthly totals ──────────────────────────────────
-  const totalRevenue   = paidOrders.reduce((s, o) => s + (o.total || 0), 0);
-  const curMonthTotal  = paidOrders.filter(o => getSaleMonthKey(o) === curKey)
-                                   .reduce((s, o) => s + (o.total || 0), 0);
-  const prevMonthTotal = paidOrders.filter(o => getSaleMonthKey(o) === prevKey)
-                                   .reduce((s, o) => s + (o.total || 0), 0);
-
   const annualEl = document.getElementById('dash-annual');
   if (annualEl) annualEl.textContent = fmtMoney(totalRevenue);
 
@@ -30,8 +50,7 @@ function renderDashboard() {
 
   const annualSubEl = document.getElementById('dash-annual-sub');
   if (annualSubEl) {
-    annualSubEl.textContent = paidOrders.length + ' paid sale' +
-      (paidOrders.length !== 1 ? 's' : '');
+    annualSubEl.textContent = totalPaidCount + ' paid sale' + (totalPaidCount !== 1 ? 's' : '');
   }
 
   const monthSubEl = document.getElementById('dash-month-sub');
@@ -49,23 +68,14 @@ function renderDashboard() {
 
   // ── Per-SKU revenue rows ─────────────────────────────────────
   const revRowsHtml = state.skus.map(sku => {
-    const soldQty = paidOrders.reduce((s, o) =>
-      s + (o.items || []).filter(i => i.skuId === sku.id)
-                         .reduce((a, i) => a + i.qty, 0), 0);
-    const giftQty = giftOrders.reduce((s, o) =>
-      s + (o.items || []).filter(i => i.skuId === sku.id)
-                         .reduce((a, i) => a + i.qty, 0), 0);
-    const skuRev  = paidOrders.reduce((s, o) =>
-      s + (o.items || []).filter(i => i.skuId === sku.id)
-                         .reduce((a, i) => a + i.qty * i.price, 0), 0);
-
-    if (soldQty === 0 && giftQty === 0) return '';
-    const giftBit = giftQty > 0
-      ? ` <span class="rev-row-gift">· ${giftQty} gifted</span>`
+    const s = skuStats[sku.id];
+    if (!s || (s.soldQty === 0 && s.giftQty === 0)) return '';
+    const giftBit = s.giftQty > 0
+      ? ` <span class="rev-row-gift">· ${s.giftQty} gifted</span>`
       : '';
     return `<div class="rev-row">
-      <span class="n">${esc(sku.name)}<span class="rev-row-meta">${soldQty} sold${giftBit}</span></span>
-      <span class="a">${fmtMoney(skuRev)}</span>
+      <span class="n">${esc(sku.name)}<span class="rev-row-meta">${s.soldQty} sold${giftBit}</span></span>
+      <span class="a">${fmtMoney(s.rev)}</span>
     </div>`;
   }).filter(Boolean).join('');
 
@@ -75,23 +85,16 @@ function renderDashboard() {
       '<div class="rev-row"><span class="n" style="opacity:.45">No paid sales yet</span></div>';
   }
 
-  // ── Net total ────────────────────────────────────────────────
   const totalRevEl = document.getElementById('total-rev');
   if (totalRevEl) totalRevEl.textContent = fmtMoney(totalRevenue);
 
   // ── Gift line ────────────────────────────────────────────────
-  const giftQtyMap = {};
-  giftOrders.forEach(o =>
-    (o.items || []).forEach(i => {
-      giftQtyMap[i.skuId] = (giftQtyMap[i.skuId] || 0) + i.qty;
-    })
-  );
-  const totalGiftQty = Object.values(giftQtyMap).reduce((a, b) => a + b, 0);
+  const totalGiftQty = Object.values(skuStats).reduce((a, s) => a + s.giftQty, 0);
   const giftEl = document.getElementById('rev-gift-line');
   if (giftEl) {
     if (totalGiftQty > 0) {
-      const giftVal = state.skus.reduce((s, sku) =>
-        s + (giftQtyMap[sku.id] || 0) * sku.price, 0);
+      const giftVal = state.skus.reduce((sum, sku) =>
+        sum + (skuStats[sku.id]?.giftQty || 0) * sku.price, 0);
       giftEl.style.display = 'flex';
       giftEl.innerHTML = `
         <span class="gift-qty-label">🎁 ${totalGiftQty} bottle${totalGiftQty > 1 ? 's' : ''} gifted</span>
@@ -127,6 +130,4 @@ function renderDashboard() {
         </div>`;
     }
   }
-
 }
-

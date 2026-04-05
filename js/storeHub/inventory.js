@@ -1,6 +1,6 @@
 /* ============================================================
    FOUR EYES COFFEE — storeHub/inventory.js
-   SKU inventory management. Moved here from the old dashboard.
+   SKU inventory management.
    ============================================================ */
 
 function renderInventory() {
@@ -13,16 +13,13 @@ function renderInventory() {
   }
 
   grid.innerHTML = state.skus.map(sku => {
-    const rem     = sku.stock - sku.sold;
-    const pct     = sku.stock > 0 ? Math.round((rem / sku.stock) * 100) : 0;
-    const isLow   = rem > 0 && rem <= Math.max(1, Math.floor(sku.stock * 0.2));
-    const isOut   = rem === 0;
-    const numCls  = isOut ? ' out' : isLow ? ' low' : '';
-    const barCls  = isLow ? ' low' : '';
+    const rem    = sku.stock - sku.sold;
+    const pct    = sku.stock > 0 ? Math.round((rem / sku.stock) * 100) : 0;
+    const isOut  = rem === 0;
+    const isLow  = !isOut && rem <= Math.max(1, Math.floor(sku.stock * 0.2));
+    const numCls = isOut ? ' out' : isLow ? ' low' : '';
+    const barCls = isLow ? ' low' : '';
     const pending = state.pendingQty[sku.id] || 0;
-    const pendingLine = pending > 0
-      ? `<div class="inv-pending-tag">⏳ ${pending} pending</div>`
-      : '';
 
     return `<div class="inv-card">
       <button class="inv-edit" onclick="openEditSku(${sku.id})">&#x270E;</button>
@@ -41,33 +38,38 @@ function renderInventory() {
       <div class="inv-bar">
         <div class="inv-bar-fill${barCls}" style="width:${pct}%"></div>
       </div>
-      ${pendingLine}
+      ${pending > 0 ? `<div class="inv-pending-tag">⏳ ${pending} pending</div>` : ''}
     </div>`;
   }).join('');
 }
 
 // ── SKU modal ─────────────────────────────────────────────────────
 
-function openAddSku() {
-  document.getElementById('sku-modal-title').textContent   = 'New Flavor';
-  document.getElementById('sm-id').value                   = '';
-  document.getElementById('sm-name').value                 = '';
-  document.getElementById('sm-stock').value                = '';
-  document.getElementById('sm-price').value                = '';
-  document.getElementById('sku-del-btn').style.display     = 'none';
+function _populateSkuModal({ title, id = '', name = '', stock = '', price = '', showDelete = false }) {
+  document.getElementById('sku-modal-title').textContent = title;
+  document.getElementById('sm-id').value                 = id;
+  document.getElementById('sm-name').value               = name;
+  document.getElementById('sm-stock').value              = stock;
+  document.getElementById('sm-price').value              = price;
+  document.getElementById('sku-del-btn').style.display   = showDelete ? 'block' : 'none';
   document.getElementById('sku-modal').classList.add('open');
+}
+
+function openAddSku() {
+  _populateSkuModal({ title: 'New Flavor' });
 }
 
 function openEditSku(id) {
   const sku = state.skus.find(s => s.id === id);
   if (!sku) return;
-  document.getElementById('sku-modal-title').textContent   = 'Edit Flavor';
-  document.getElementById('sm-id').value                   = id;
-  document.getElementById('sm-name').value                 = sku.name;
-  document.getElementById('sm-stock').value                = sku.stock;
-  document.getElementById('sm-price').value                = sku.price;
-  document.getElementById('sku-del-btn').style.display     = 'block';
-  document.getElementById('sku-modal').classList.add('open');
+  _populateSkuModal({
+    title:      'Edit Flavor',
+    id:         sku.id,
+    name:       sku.name,
+    stock:      sku.stock,
+    price:      sku.price,
+    showDelete: true
+  });
 }
 
 async function saveSku() {
@@ -76,9 +78,9 @@ async function saveSku() {
   const stock = parseInt(document.getElementById('sm-stock').value);
   const price = parseFloat(document.getElementById('sm-price').value);
 
-  if (!name)              { alert('Enter a flavor name.'); return; }
+  if (!name)             { alert('Enter a flavor name.'); return; }
   if (!stock || stock < 1) { alert('Enter bottle count.'); return; }
-  if (!price || price <= 0) { alert('Enter a price.'); return; }
+  if (!price || price <= 0) { alert('Enter a price.');    return; }
 
   let savedSku;
   if (id) {
@@ -112,10 +114,8 @@ async function deleteSku() {
   const sku = state.skus.find(s => s.id === id);
   if (!sku || !confirm(`Remove "${sku.name}"?`)) return;
 
-  // Soft-delete in Supabase
   dbDeleteSku(id).catch(e => console.error('Delete SKU failed:', e));
 
-  // Remove from local state
   state.skus   = state.skus.filter(s => s.id !== id);
   state.orders = state.orders.filter(o =>
     !(o.items || []).some(i => i.skuId === id)
@@ -132,6 +132,3 @@ async function deleteSku() {
 function closeSkuModal() {
   document.getElementById('sku-modal').classList.remove('open');
 }
-
-
-

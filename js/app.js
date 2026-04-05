@@ -31,8 +31,6 @@ function fmtMoney(v) {
 }
 
 // Extract YYYY-MM month key from an order object
-// Uses createdAt (Supabase ISO string) when available — fixes the
-// old bug where integer IDs were parsed as timestamps.
 function getSaleMonthKey(order) {
   if (order.createdAt) {
     const d = new Date(order.createdAt);
@@ -43,7 +41,6 @@ function getSaleMonthKey(order) {
     const d = new Date(order.id);
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
   }
-  // Final fallback: current month
   const n = new Date();
   return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
 }
@@ -67,8 +64,7 @@ function loadLocal() {
   try {
     const skus   = localStorage.getItem('fec_skus');
     const orders = localStorage.getItem('fec_orders');
-    // Support legacy key name from old single-file build
-    const legacy = localStorage.getItem('fec_sales');
+    const legacy = localStorage.getItem('fec_sales'); // legacy key from old single-file build
 
     if (skus)   state.skus   = JSON.parse(skus);
     if (orders) state.orders = JSON.parse(orders);
@@ -92,14 +88,13 @@ function switchTab(name) {
     if (btn)   btn.classList.toggle('active',   n === name);
   });
 
-  // Per-tab side effects
   if (name === 'newsale') {
     if (typeof renderSaleForm       === 'function') renderSaleForm();
     if (typeof loadPendingForNewSale === 'function') loadPendingForNewSale();
   }
   if (name === 'storehub') {
-    if (typeof loadActiveCode   === 'function') loadActiveCode();
-    if (typeof renderInventory  === 'function') renderInventory();
+    if (typeof loadActiveCode  === 'function') loadActiveCode();
+    if (typeof renderInventory === 'function') renderInventory();
   }
   if (name === 'history') {
     if (typeof renderHistory === 'function') renderHistory();
@@ -122,7 +117,7 @@ function switchInnerTab(panelId, tabName) {
 
 // ── PIN screen ────────────────────────────────────────────────────
 
-const CORRECT_PIN = '0749'; // change your PIN here
+const CORRECT_PIN = '0749';
 let pinEntry = '';
 
 function pinCheckSession() {
@@ -169,7 +164,6 @@ function pinBack() {
   pinUpdateDots();
 }
 
-// Keyboard support for PIN entry
 document.addEventListener('keydown', e => {
   const overlay = document.getElementById('pin-overlay');
   if (!overlay || overlay.classList.contains('hidden')) return;
@@ -179,6 +173,24 @@ document.addEventListener('keydown', e => {
 
 // ── App update check ──────────────────────────────────────────────
 
+// Fetch the live APP_VERSION string from the server without cache
+async function fetchLiveVersion() {
+  const res  = await fetch('js/app.js?v=' + Date.now(), { cache: 'no-store' });
+  const text = await res.text();
+  const m    = text.match(/APP_VERSION = '([^']+)'/);
+  return m ? m[1] : null;
+}
+
+// Wire up the update banner in header + Store Hub
+function showUpdateBanner() {
+  const headerBtn = document.getElementById('update-btn');
+  const appBtn    = document.getElementById('update-app-btn');
+  const labelEl   = document.getElementById('update-app-label');
+  if (headerBtn) { headerBtn.style.display = 'flex'; headerBtn.classList.add('has-update'); }
+  if (appBtn)    { appBtn.classList.add('has-update'); appBtn.onclick = () => location.reload(true); }
+  if (labelEl)   labelEl.textContent = '↑ Update Available — Tap to Reload';
+}
+
 async function checkForUpdate() {
   const btn     = document.getElementById('update-app-btn');
   const labelEl = document.getElementById('update-app-label');
@@ -187,18 +199,11 @@ async function checkForUpdate() {
   if (btn) btn.disabled = true;
 
   try {
-    const res   = await fetch('js/app.js?v=' + Date.now(), { cache: 'no-store' });
-    const text  = await res.text();
-    const match = text.match(/APP_VERSION = '[^']+'/);
-    const live  = match ? match[1] : null;
-
+    const live = await fetchLiveVersion();
     if (!live) {
       if (labelEl) labelEl.textContent = 'Could not check';
     } else if (live !== APP_VERSION) {
-      if (labelEl) labelEl.textContent = '↑ Update Available — Tap to Reload';
-      if (btn) { btn.classList.add('has-update'); btn.onclick = () => location.reload(true); }
-      const headerBtn = document.getElementById('update-btn');
-      if (headerBtn) { headerBtn.style.display = 'flex'; headerBtn.classList.add('has-update'); }
+      showUpdateBanner();
     } else {
       if (labelEl) labelEl.textContent = 'App is up to date ✓';
       setTimeout(() => {
@@ -251,7 +256,6 @@ async function appLoadData() {
     }
     state.orders = orders;
 
-    // Pending counts — non-blocking
     try {
       state.pendingQty = await dbLoadPendingCounts();
     } catch(e) {
@@ -273,36 +277,25 @@ async function appLoadData() {
     }
   }
 
-  // Always render with whatever state we have
   if (typeof renderDashboard       === 'function') renderDashboard();
   if (typeof renderInventory       === 'function') renderInventory();
   if (typeof renderHistory         === 'function') renderHistory();
   if (typeof renderSaleForm        === 'function') renderSaleForm();
-  if (typeof loadPendingForNewSale  === 'function') loadPendingForNewSale();
+  if (typeof loadPendingForNewSale === 'function') loadPendingForNewSale();
 }
 
 // ── Silent background update check (3s after load) ───────────────
 
 setTimeout(async () => {
   try {
-    const res   = await fetch('js/app.js?v=' + Date.now(), { cache: 'no-store' });
-    const text  = await res.text();
-    const match = text.match(/APP_VERSION = '[^']+'/);
-    if (match && match[1] !== APP_VERSION) {
-      const headerBtn = document.getElementById('update-btn');
-      const appBtn    = document.getElementById('update-app-btn');
-      const labelEl   = document.getElementById('update-app-label');
-      if (headerBtn) { headerBtn.style.display = 'flex'; headerBtn.classList.add('has-update'); }
-      if (appBtn)    { appBtn.classList.add('has-update'); appBtn.onclick = () => location.reload(true); }
-      if (labelEl)   labelEl.textContent = '↑ Update Available — Tap to Reload';
-    }
+    const live = await fetchLiveVersion();
+    if (live && live !== APP_VERSION) showUpdateBanner();
   } catch(e) { /* silent */ }
 }, 3000);
 
 // ── Boot sequence ─────────────────────────────────────────────────
 
 (function boot() {
-  // Set header date
   const dateEl = document.getElementById('session-date');
   if (dateEl) {
     dateEl.textContent = new Date().toLocaleDateString('en-US', {
@@ -310,13 +303,9 @@ setTimeout(async () => {
     });
   }
 
-  // PIN: restore session if already unlocked
   pinCheckSession();
-
-  // Hydrate state from localStorage (gives instant cache while Supabase loads)
   loadLocal();
 
-  // Wait for Supabase CDN, then init and pull live data
   function waitForSupabase(cb, attempts = 0) {
     if (typeof supabase !== 'undefined') cb();
     else if (attempts < 20) setTimeout(() => waitForSupabase(cb, attempts + 1), 100);

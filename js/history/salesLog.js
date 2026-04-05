@@ -9,26 +9,25 @@ function buildSaleCard(s) {
   const lines   = (s.items || []).map(i =>
     `<div class="sc-item-line"><b>${esc(i.skuName)}</b> ×${i.qty} — $${i.price * i.qty}</div>`
   ).join('');
-  const bottles  = s.discount > 0 ? Math.round(s.discount / 3) : 0;
-  const discTag  = bottles > 0
+  const bottles = s.discount > 0 ? Math.round(s.discount / 3) : 0;
+  const discTag = bottles > 0
     ? `<span class="tag tdisc">${bottles} bottle${bottles > 1 ? 's' : ''} returned</span>`
     : '';
-  const payClass = s.pay === 'Gift' ? ' gift' : '';
 
   return `<div class="sale-card">
     <div class="sc-top">
       <div class="sc-name">${esc(s.name)}</div>
       <div class="sc-amt">
         ${fmtMoney(s.total)}
-        ${s.discount > 0
-          ? `<span class="sc-disc-tag">&#x2212;$${s.discount} (${Math.round(s.discount/3)} returned)</span>`
+        ${bottles > 0
+          ? `<span class="sc-disc-tag">&#x2212;$${s.discount} (${bottles} returned)</span>`
           : ''}
       </div>
     </div>
     <div class="sc-items">${lines}</div>
     <div class="sc-bot">
       <div class="sc-tags">
-        <span class="tag tpay${payClass}">${esc(s.pay)}</span>
+        <span class="tag tpay${s.pay === 'Gift' ? ' gift' : ''}">${esc(s.pay)}</span>
         ${discTag}
         <span class="tag ttime">${esc(s.time)}</span>
       </div>
@@ -50,28 +49,21 @@ function renderHistory() {
   const now    = new Date();
   const curKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
 
-  // Build sorted unique month keys from all orders
-  const allKeys = [...new Set(state.orders.map(getSaleMonthKey))].sort().reverse();
+  const allKeys    = [...new Set(state.orders.map(getSaleMonthKey))].sort().reverse();
+  const defaultKey = allKeys.includes(curKey) ? curKey : 'all';
 
-  // Rebuild dropdown, preserving current selection
+  // Rebuild dropdown, preserving a valid prior selection
   const prevSel = filterEl.value;
   filterEl.innerHTML = '<option value="all">All Time</option>' +
     allKeys.map(k => `<option value="${k}">${getMonthLabel(k)}</option>`).join('');
 
-  if (!prevSel || prevSel === 'current') {
-    filterEl.value = allKeys.includes(curKey) ? curKey : 'all';
-  } else if (prevSel === 'all' || allKeys.includes(prevSel)) {
-    filterEl.value = prevSel;
-  } else {
-    filterEl.value = allKeys.includes(curKey) ? curKey : 'all';
-  }
+  filterEl.value = (!prevSel || prevSel === 'current')
+    ? defaultKey
+    : (prevSel === 'all' || allKeys.includes(prevSel)) ? prevSel : defaultKey;
 
   const selKey     = filterEl.value;
-  const keysToShow = selKey === 'all'
-    ? allKeys
-    : (allKeys.includes(selKey) ? [selKey] : []);
+  const keysToShow = selKey === 'all' ? allKeys : (allKeys.includes(selKey) ? [selKey] : []);
 
-  // Count badge
   const countEl = document.getElementById('hist-count');
   if (countEl) countEl.textContent = state.orders.length;
 
@@ -92,12 +84,11 @@ function renderHistory() {
       .filter(o => o.pay !== 'Gift')
       .reduce((sum, o) => sum + (o.total || 0), 0);
     const isOpen = key === curKey;
-    const label  = getMonthLabel(key);
 
     return `<div class="month-group">
       <div class="month-group-hdr${isOpen ? ' open' : ''}" onclick="toggleMonthGroup(this)">
         <div class="month-group-left">
-          <span class="month-group-name">${label}</span>
+          <span class="month-group-name">${getMonthLabel(key)}</span>
           <span class="month-group-meta">
             ${orders.length} sale${orders.length !== 1 ? 's' : ''} · ${fmtMoney(monthTotal)}
           </span>
@@ -112,10 +103,9 @@ function renderHistory() {
 }
 
 function toggleMonthGroup(hdr) {
-  const body   = hdr.nextElementSibling;
   const isOpen = hdr.classList.contains('open');
   hdr.classList.toggle('open', !isOpen);
-  body.style.display = isOpen ? 'none' : 'block';
+  hdr.nextElementSibling.style.display = isOpen ? 'none' : 'block';
 }
 
 // ── Edit sale ─────────────────────────────────────────────────────
@@ -127,7 +117,6 @@ function openEditSale(id) {
   document.getElementById('esm-id').value   = id;
   document.getElementById('esm-name').value = s.name;
 
-  // Normalize to valid select options
   const validPay = ['Venmo', 'Cash', 'Zelle', 'Card', 'Gift'];
   document.getElementById('esm-pay').value = validPay.includes(s.pay) ? s.pay : 'Venmo';
 
@@ -182,6 +171,12 @@ async function saveSaleEdit() {
   s.discount = disc;
   s.total    = Math.max(0, subtotal - disc);
 
+  // Persist updated sold counts to Supabase
+  (s.items || []).forEach(item => {
+    const sku = state.skus.find(sk => sk.id === item.skuId);
+    if (sku) dbUpdateSkuSold(sku.id, sku.sold).catch(e => console.error('Update sold failed:', e));
+  });
+
   closeSaleModal();
   saveLocal();
   renderDashboard();
@@ -194,10 +189,13 @@ async function deleteSale(id) {
   const idx = state.orders.findIndex(o => o.id === id);
   if (idx === -1) return;
 
-  // Revert sold counts
+  // Revert sold counts and persist to Supabase
   (state.orders[idx].items || []).forEach(item => {
     const sku = state.skus.find(sk => sk.id === item.skuId);
-    if (sku) sku.sold = Math.max(0, sku.sold - item.qty);
+    if (sku) {
+      sku.sold = Math.max(0, sku.sold - item.qty);
+      dbUpdateSkuSold(sku.id, sku.sold).catch(e => console.error('Update sold failed:', e));
+    }
   });
 
   state.orders.splice(idx, 1);
@@ -211,6 +209,3 @@ async function deleteSale(id) {
 function closeSaleModal() {
   document.getElementById('sale-modal').classList.remove('open');
 }
-
-
-
