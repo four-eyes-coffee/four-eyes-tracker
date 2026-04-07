@@ -127,8 +127,8 @@ function setSuccessEmailStatus(email) {
   const el = document.getElementById('success-email-status');
   if (!el) return;
   if (email) {
-    el.className = 'success-email-status status-queued';
-    el.innerHTML = `✉ &nbsp;EMAIL · QUEUED`;
+    el.className = 'success-email-status status-sent';
+    el.innerHTML = `✉ &nbsp;EMAIL SENT`;
     el.style.display = 'flex';
   } else {
     el.style.display = 'none';
@@ -137,7 +137,7 @@ function setSuccessEmailStatus(email) {
 
 function emailStatusTag(email) {
   if (email) {
-    return `<span class="status-tag queued">✉ &nbsp;EMAIL · QUEUED</span>`;
+    return `<span class="status-tag sent" style="margin-bottom:12px;">✉ &nbsp;EMAIL SENT</span>`;
   }
   return '';
 }
