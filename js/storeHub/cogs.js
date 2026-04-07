@@ -91,10 +91,13 @@ async function initCogs() {
 
 function renderCogsShell() {
   document.getElementById('inner-cogs').innerHTML = `
-    ${cogsSection('batches',   'Batch Log',          'openCogsBatchModal()', true,  true)}
-    ${cogsSection('beans',     'Bean Purchases',     'openCogsBeanModal()',  false, false)}
-    ${cogsSection('packaging', 'Packaging',          'openCogsPackagingModal()')}
-    ${cogsSection('equipment', 'Equipment',          'openCogsEquipmentModal()')}
+    ${cogsSection('batches',   'Batch Log',      'openCogsBatchModal()', true,  true)}
+    <div class="cogs-divider"></div>
+    ${cogsSection('beans',     'Bean Purchases', 'openCogsBeanModal()',  false, false)}
+    <div class="cogs-divider"></div>
+    ${cogsSection('packaging', 'Packaging',      'openCogsPackagingModal()')}
+    <div class="cogs-divider"></div>
+    ${cogsSection('equipment', 'Equipment',      'openCogsEquipmentModal()')}
   `;
 }
 
@@ -237,10 +240,10 @@ function renderBatches() {
   if (!_batches.length) { body.innerHTML = '<div class="cogs-empty">No batches logged.</div>'; return; }
 
   body.innerHTML = _batches.map(b => {
-    const beans    = (b.beans_used || []).map(r => `${esc(r.name)} ${fmtGrams(r.grams)}`).join(', ');
-    const isTest   = b.batch_type === 'test';
+    const beans  = (b.beans_used || []).map(r => `${esc(r.name)} ${fmtGrams(r.grams)}`).join(', ');
+    const isTest = b.batch_type === 'test';
     return `
-    <div class="cogs-row">
+    <div class="cogs-batch-row">
       <div class="cogs-row-main">
         <div class="cogs-row-title">
           ${esc(b.sku_name)} · ${b.bottles_produced} bottles
@@ -523,7 +526,7 @@ function openCogsBatchModal(id) {
       <button class="cogs-add-bean-btn" onclick="addBatchBeanRow()">+ Add Bean</button>
     </div>
     <div class="field"><label>Bottles Produced</label>
-      <input id="bat-bottles" type="number" min="1" inputmode="numeric" value="${rec?.bottles_produced || ''}" oninput="updateBatchCalc()"></div>
+      <input id="bat-bottles" type="number" min="0.5" step="0.5" inputmode="decimal" value="${rec?.bottles_produced || ''}" oninput="updateBatchCalc()"></div>
     <div class="field"><label>Notes <span class="cogs-optional">(optional)</span></label>
       <input id="bat-notes" type="text" value="${esc(rec?.notes || '')}"></div>
     <div class="cogs-calc-box" id="bat-calc">
@@ -624,7 +627,7 @@ function removeBatchBeanRow(idx) {
 }
 
 function updateBatchCalc() {
-  const bottles = parseInt(_val('bat-bottles')) || 0;
+  const bottles = parseFloat(_val('bat-bottles')) || 0;
 
   const beanCost = _batchBeanRows.reduce((sum, row) => {
     const g   = toGrams(parseFloat(row.grams) || 0, row.unit || 'g');
@@ -650,7 +653,7 @@ async function saveCogsBatch(id) {
   const skuId   = skuEl ? parseInt(skuEl.value) || null : null;
   const skuName = skuEl ? (skuEl.options[skuEl.selectedIndex]?.dataset?.name || skuEl.options[skuEl.selectedIndex]?.text || '') : '';
   const date    = _val('bat-date');
-  const bottles = parseInt(_val('bat-bottles')) || 0;
+  const bottles = parseFloat(_val('bat-bottles')) || 0;
 
   if (!date || !bottles) { alert('Fill in date and bottles produced.'); return; }
 
