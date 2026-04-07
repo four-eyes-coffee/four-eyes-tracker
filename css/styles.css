@@ -1234,3 +1234,62 @@ header {
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
+
+/* ── P&L Card ────────────────────────────────────────────── */
+.pnl-card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  padding: 16px 16px 12px;
+  margin-bottom: 0;
+}
+
+.pnl-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+.pnl-row:last-child { margin-bottom: 0; }
+
+.pnl-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+.pnl-value {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--white);
+}
+.pnl-cogs { color: var(--muted); font-size: 16px; }
+
+.pnl-divider {
+  border: none;
+  border-top: 1.5px solid var(--border);
+  margin: 6px 0 12px;
+}
+
+.pnl-profit-row .pnl-label { color: var(--white); font-size: 12px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+.pnl-profit { font-size: 28px; color: var(--yellow); }
+
+.pnl-margin {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: right;
+  margin-top: -6px;
+  margin-bottom: 4px;
+}
+
+.pnl-equip-row {
+  padding-top: 10px;
+  margin-top: 6px;
+  border-top: 1px dashed rgba(255,255,255,0.08);
+  margin-bottom: 0;
+}
+.pnl-equip-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; }
+.pnl-equip-val   { font-size: 13px; color: var(--muted); }

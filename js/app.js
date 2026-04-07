@@ -8,9 +8,11 @@ const APP_VERSION = '20260406-phase4'; // auto-updated on each deploy
 // ── Shared state ──────────────────────────────────────────────────
 // Single source of truth. All modules read/write this object.
 const state = {
-  skus:       [],   // [{ id, name, stock, sold, price }]
+  skus:       [],   // [{ id, name, stock, sold, price, sku_type }]
   orders:     [],   // [{ id, name, items, pay, discount, total, time, createdAt }]
   pendingQty: {},   // { skuId: qty } — aggregated from pending orders
+  batches:    [],   // [{ id, sku_id, sku_name, cost_per_bottle, total_cogs, batch_type, ... }]
+  equipment:  [],   // [{ id, item_name, amount_paid, ... }]
   nextSkuId:  1     // incremented locally for optimistic inserts
 };
 
@@ -256,13 +258,15 @@ async function appLoadData() {
   if (statusEl) statusEl.textContent = 'Connecting to Supabase...';
 
   try {
-    const { skus, orders } = await dbLoad();
+    const { skus, orders, batches, equipment } = await dbLoad();
 
     if (skus.length) {
       state.skus      = skus;
       state.nextSkuId = Math.max(...skus.map(s => s.id)) + 1;
     }
-    state.orders = orders;
+    state.orders    = orders;
+    state.batches   = batches;
+    state.equipment = equipment;
 
     try {
       state.pendingQty = await dbLoadPendingCounts();

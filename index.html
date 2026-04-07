@@ -12,7 +12,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=9">
+  <link rel="stylesheet" href="css/styles.css?v=10">
 </head>
 <body>
 
@@ -86,6 +86,31 @@
       <span class="v" id="total-rev">$0</span>
     </div>
     <div id="rev-gift-line" class="rev-gift-line" style="display:none;"></div>
+  </div>
+
+  <div class="sec-row">
+    <span class="sec-label">P&amp;L</span>
+  </div>
+
+  <div class="pnl-card" id="pnl-card">
+    <div class="pnl-row">
+      <span class="pnl-label">Revenue</span>
+      <span class="pnl-value" id="pnl-revenue">$0</span>
+    </div>
+    <div class="pnl-row">
+      <span class="pnl-label">Cost of Goods</span>
+      <span class="pnl-value pnl-cogs" id="pnl-cogs">—</span>
+    </div>
+    <div class="pnl-divider"></div>
+    <div class="pnl-row pnl-profit-row">
+      <span class="pnl-label">Gross Profit</span>
+      <span class="pnl-value pnl-profit" id="pnl-profit">—</span>
+    </div>
+    <div class="pnl-margin" id="pnl-margin">Add batch logs in COGS to calculate margin</div>
+    <div class="pnl-row pnl-equip-row" id="pnl-equip-row" style="display:none">
+      <span class="pnl-label pnl-equip-label">Overhead (equipment)</span>
+      <span class="pnl-value pnl-equip-val" id="pnl-equip">$0</span>
+    </div>
   </div>
 
   <div class="sec-row">
@@ -440,16 +465,16 @@
 </div>
 
 <!-- ── Scripts ────────────────────────────────────────────────── -->
-<script src="js/supabase.js?v=9"></script>
-<script src="js/app.js?v=9"></script>
-<script src="js/dashboard.js?v=9"></script>
-<script src="js/newSale.js?v=9"></script>
-<script src="js/history/salesLog.js?v=9"></script>
-<script src="js/history/reconcile.js?v=9"></script>
-<script src="js/storeHub/inventory.js?v=9"></script>
-<script src="js/storeHub/cogs.js?v=9"></script>
-<script src="js/storeHub/dropCodes.js?v=9"></script>
-<script src="js/storeHub/fulfillment.js?v=9"></script>
+<script src="js/supabase.js?v=10"></script>
+<script src="js/app.js?v=10"></script>
+<script src="js/dashboard.js?v=10"></script>
+<script src="js/newSale.js?v=10"></script>
+<script src="js/history/salesLog.js?v=10"></script>
+<script src="js/history/reconcile.js?v=10"></script>
+<script src="js/storeHub/inventory.js?v=10"></script>
+<script src="js/storeHub/cogs.js?v=10"></script>
+<script src="js/storeHub/dropCodes.js?v=10"></script>
+<script src="js/storeHub/fulfillment.js?v=10"></script>
 
 <script>
   // All scripts and DOM elements are loaded at this point.

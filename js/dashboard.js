@@ -130,4 +130,67 @@ function renderDashboard() {
         </div>`;
     }
   }
+
+  // ── P&L card ─────────────────────────────────────────────────
+  renderPnL(skuStats, totalRevenue);
+}
+
+// ── P&L card ──────────────────────────────────────────────────────
+
+function calcPnL(skuStats, totalRevenue) {
+  // Weighted average cost per bottle per SKU across all 'For Sale' batches
+  const skuTotals = {}; // { skuId: { totalCost, totalBottles } }
+  (state.batches || [])
+    .filter(b => (b.batch_type || 'production') !== 'test' && b.sku_id)
+    .forEach(b => {
+      if (!skuTotals[b.sku_id]) skuTotals[b.sku_id] = { totalCost: 0, totalBottles: 0 };
+      skuTotals[b.sku_id].totalCost    += parseFloat(b.total_cogs)        || 0;
+      skuTotals[b.sku_id].totalBottles += parseFloat(b.bottles_produced)  || 0;
+    });
+
+  // COGS = units sold per SKU × weighted avg cost/bottle for that SKU
+  let totalCogs    = 0;
+  let hasBatchData = false;
+  state.skus.forEach(sku => {
+    const t = skuTotals[sku.id];
+    if (!t || t.totalBottles === 0) return;
+    hasBatchData = true;
+    const cpb     = t.totalCost / t.totalBottles;
+    const soldQty = skuStats[sku.id]?.soldQty || 0;
+    totalCogs    += soldQty * cpb;
+  });
+
+  const grossProfit = totalRevenue - totalCogs;
+  const marginPct   = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : null;
+  const totalEquip  = (state.equipment || []).reduce((s, e) => s + (parseFloat(e.amount_paid) || 0), 0);
+
+  return { totalCogs, grossProfit, marginPct, totalEquip, hasBatchData };
+}
+
+function renderPnL(skuStats, totalRevenue) {
+  const card = document.getElementById('pnl-card');
+  if (!card) return;
+
+  const { totalCogs, grossProfit, marginPct, totalEquip, hasBatchData } = calcPnL(skuStats, totalRevenue);
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+  set('pnl-revenue', fmtMoney(totalRevenue));
+  set('pnl-cogs',    hasBatchData ? `− ${fmtMoney(totalCogs)}` : '—');
+  set('pnl-profit',  hasBatchData ? fmtMoney(grossProfit) : '—');
+  set('pnl-margin',  marginPct !== null && hasBatchData
+    ? `${marginPct.toFixed(1)}% gross margin`
+    : 'Add batch logs in COGS to calculate margin');
+
+  const equipRow = document.getElementById('pnl-equip-row');
+  if (equipRow) {
+    equipRow.style.display = totalEquip > 0 ? 'flex' : 'none';
+    set('pnl-equip', fmtMoney(totalEquip));
+  }
+
+  // Colour gross profit — yellow if positive, blue if negative
+  const profitEl = document.getElementById('pnl-profit');
+  if (profitEl) {
+    profitEl.style.color = grossProfit >= 0 ? 'var(--yellow)' : 'var(--blue)';
+  }
 }

@@ -260,13 +260,15 @@ async function dbDeactivateCode() {
 
 // ── Bulk load (called on init + refresh) ─────────────────────────
 
-// Returns { skus, orders } — single round-trip pair
+// Returns { skus, orders, batches, equipment } — single round-trip group
 async function dbLoad() {
-  const [skus, orders] = await Promise.all([
+  const [skus, orders, batches, equipment] = await Promise.all([
     dbLoadSkus(),
-    dbLoadOrders()
+    dbLoadOrders(),
+    dbLoadBatches(),
+    dbLoadEquipmentPurchases()
   ]);
-  return { skus, orders };
+  return { skus, orders, batches, equipment };
 }
 
 // ── COGS — Bean Purchases ─────────────────────────────────────────
