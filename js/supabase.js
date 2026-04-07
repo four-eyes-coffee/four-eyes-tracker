@@ -117,13 +117,14 @@ async function dbSaveOrder(sale) {
 
   // Insert order header
   const { data: orderData, error: orderError } = await _supa.from('orders').insert({
-    customer_id:   customerId,
-    customer_name: sale.name,
-    status:        'completed',
-    pay_method:    sale.pay,
-    discount:      sale.discount,
-    total:         sale.total,
-    created_at:    new Date().toISOString()
+    customer_id:    customerId,
+    customer_name:  sale.name,
+    customer_email: sale.email || null,
+    status:         'completed',
+    pay_method:     sale.pay,
+    discount:       sale.discount,
+    total:          sale.total,
+    created_at:     new Date().toISOString()
   }).select().single();
   if (orderError) throw orderError;
 

@@ -223,6 +223,7 @@ async function logSale() {
   const sale = {
     id:        Date.now(),
     name,
+    email,
     items:     cart.map(c => {
       const sku = state.skus.find(s => s.id === c.skuId);
       return { skuId: c.skuId, skuName: sku ? sku.name : '?', qty: c.qty, price: sku ? sku.price : 0 };
