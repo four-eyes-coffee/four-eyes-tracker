@@ -651,6 +651,7 @@
         fulfillment_window: order.window,
         pay_method: 'Pay at ' + order.fulfillment,
         total: subtotal, notes: confirmCode,
+        code_type: codeType,
         created_at: new Date().toISOString()
       };
       if (order.interest.length) orderRow.flavor_interest = order.interest.join(', ');

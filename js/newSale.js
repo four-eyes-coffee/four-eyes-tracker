@@ -260,10 +260,15 @@ async function loadPendingForNewSale() {
       const windowLabel = o.fulfillment_type
         ? esc(o.fulfillment_type) + (o.fulfillment_window ? ' · ' + esc(o.fulfillment_window) : '')
         : '';
+      const dropType  = (o.code_type === 'family') ? 'FAMILY' : 'PUBLIC';
+      const dropClass = (o.code_type === 'family') ? 'drop-family' : 'drop-public';
       return `<div class="pending-card">
         <div class="pending-card-top">
           <div class="pending-name">${esc(o.customer_name || '—')}</div>
-          <div class="pending-window">${windowLabel}</div>
+          <div class="pending-window">
+            <span class="drop-badge ${dropClass}">${dropType}</span>
+            ${windowLabel}
+          </div>
         </div>
         <div class="pending-items">${lines}</div>
         ${emailStatusTag(o.customer_email)}
