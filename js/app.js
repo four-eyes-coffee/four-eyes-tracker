@@ -191,13 +191,18 @@ async function fetchLiveVersion() {
   return m ? m[1] : null;
 }
 
+// Cache-busting reload — works on iOS Safari where location.reload(true) is ignored
+function hardReload() {
+  window.location.replace(location.pathname + '?_=' + Date.now());
+}
+
 // Wire up the update banner in header + Store Hub
 function showUpdateBanner() {
   const headerBtn = document.getElementById('update-btn');
   const appBtn    = document.getElementById('update-app-btn');
   const labelEl   = document.getElementById('update-app-label');
   if (headerBtn) { headerBtn.style.display = 'flex'; headerBtn.classList.add('has-update'); }
-  if (appBtn)    { appBtn.classList.add('has-update'); appBtn.onclick = () => location.reload(true); }
+  if (appBtn)    { appBtn.classList.add('has-update'); appBtn.onclick = hardReload; }
   if (labelEl)   labelEl.textContent = '↑ Update Available — Tap to Reload';
 }
 
@@ -211,11 +216,14 @@ async function checkForUpdate() {
   try {
     const live = await fetchLiveVersion();
     if (!live) {
-      if (labelEl) labelEl.textContent = 'Could not check';
+      if (labelEl) labelEl.textContent = 'Could not check — try again';
+      if (btn) { btn.disabled = false; btn.onclick = checkForUpdate; }
     } else if (live !== APP_VERSION) {
       showUpdateBanner();
+      hardReload(); // update found — reload immediately
     } else {
       if (labelEl) labelEl.textContent = 'App is up to date ✓';
+      if (btn) btn.disabled = false;
       setTimeout(() => {
         if (labelEl) labelEl.textContent = 'Check for App Update';
         if (btn) btn.onclick = checkForUpdate;
@@ -223,10 +231,9 @@ async function checkForUpdate() {
     }
   } catch(e) {
     if (labelEl) labelEl.textContent = 'Check failed — try again';
+    if (btn) btn.disabled = false;
     setTimeout(() => { if (labelEl) labelEl.textContent = 'Check for App Update'; }, 2000);
   }
-
-  if (btn) btn.disabled = false;
 }
 
 async function refreshApp() {
