@@ -975,3 +975,119 @@ header {
 }
 
 .pin-dots.shake { animation: pin-shake 0.4s ease; }
+
+/* ── COGS ────────────────────────────────────────────────── */
+.cogs-sec {
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.cogs-sec-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--card);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  gap: 10px;
+}
+
+.cogs-sec-left  { flex: 1; min-width: 0; }
+.cogs-sec-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.cogs-sec-name  { font-size: 11px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; display: block; }
+.cogs-sec-meta  { font-size: 10px; color: var(--muted); font-weight: 500; display: block; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cogs-chevron   { font-size: 12px; color: var(--muted); transition: transform 0.2s; display: inline-block; }
+
+.cogs-sec-body  { background: var(--black); border-top: 1px solid var(--border); }
+
+.cogs-empty   { padding: 16px 14px; font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+.cogs-loading { padding: 16px 14px; font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+.cogs-error   { padding: 16px 14px; font-size: 10px; color: #ff4444; letter-spacing: 1px; text-transform: uppercase; }
+
+/* COGS rows */
+.cogs-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  gap: 10px;
+}
+.cogs-row:last-child { border-bottom: none; }
+
+.cogs-row-main   { flex: 1; min-width: 0; }
+.cogs-row-title  { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cogs-row-sub    { font-size: 10px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.cogs-row-right  { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+.cogs-row-amount { font-size: 14px; font-weight: 900; line-height: 1; }
+.cogs-unit       { font-size: 9px; font-weight: 700; color: var(--muted); margin-left: 1px; }
+.cogs-row-date   { font-size: 9px; color: var(--muted); letter-spacing: 0.5px; }
+.cogs-edit-btn   {
+  background: none; border: 1.5px solid var(--border); border-radius: 2px;
+  color: var(--muted); font-family: 'Rubik', sans-serif; font-size: 9px;
+  font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  padding: 3px 7px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.cogs-edit-btn:active { border-color: var(--yellow); color: var(--yellow); }
+
+/* Weight input row */
+.cogs-weight-row    { display: flex; gap: 6px; }
+.cogs-unit-select   {
+  padding: 10px 8px; background: var(--black); border: 2px solid var(--border);
+  border-radius: 3px; font-family: 'Rubik', sans-serif; font-size: 13px;
+  font-weight: 700; color: var(--white); outline: none; cursor: pointer;
+  -webkit-appearance: none; appearance: none; flex-shrink: 0; width: 64px;
+}
+.cogs-unit-select:focus { border-color: var(--yellow); }
+
+/* Optional label hint */
+.cogs-optional { font-size: 8px; color: var(--muted); font-weight: 500; letter-spacing: 0; text-transform: none; }
+
+/* Add bean button */
+.cogs-add-bean-btn {
+  margin-top: 8px; padding: 7px 12px; background: transparent;
+  border: 1.5px solid var(--border); border-radius: 2px;
+  font-family: 'Rubik', sans-serif; font-size: 9px; font-weight: 900;
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.cogs-add-bean-btn:active { border-color: var(--yellow); color: var(--yellow); }
+
+/* Batch bean rows */
+.bat-bean-row     { margin-bottom: 8px; }
+.bat-bean-inputs  { display: flex; gap: 6px; align-items: center; }
+.bat-bean-name    { flex: 1; }
+.bat-bean-weight  { display: flex; gap: 4px; flex-shrink: 0; }
+.bat-bean-grams   { width: 72px; }
+.bat-bean-hint    { font-size: 9px; color: var(--blue); font-weight: 700; letter-spacing: 0.5px; margin-top: 3px; padding-left: 2px; }
+
+/* Batch cost calc box */
+.cogs-calc-box {
+  background: rgba(230,255,0,0.05);
+  border: 1.5px solid rgba(230,255,0,0.2);
+  border-radius: 3px;
+  padding: 12px 14px;
+  margin: 14px 0 6px;
+}
+.cogs-calc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.cogs-calc-row:last-child { margin-bottom: 0; }
+.cogs-calc-total {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--white);
+  padding-top: 8px;
+  border-top: 1px solid rgba(230,255,0,0.15);
+  margin-top: 6px;
+}

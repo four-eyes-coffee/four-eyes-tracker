@@ -266,3 +266,179 @@ async function dbLoad() {
   ]);
   return { skus, orders };
 }
+
+// ── COGS — Bean Purchases ─────────────────────────────────────────
+
+async function dbLoadBeanPurchases() {
+  const { data, error } = await _supa
+    .from('bean_purchases')
+    .select('*')
+    .order('purchased_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+async function dbSaveBeanPurchase(p) {
+  const { data, error } = await _supa.from('bean_purchases').insert({
+    purchased_at: p.purchased_at,
+    bean_type:    p.bean_type,
+    vendor:       p.vendor,
+    amount_paid:  p.amount_paid,
+    weight_g:     p.weight_g,
+    price_per_g:  p.price_per_g,
+    notes:        p.notes || null
+  }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function dbUpdateBeanPurchase(p) {
+  const { error } = await _supa.from('bean_purchases').update({
+    purchased_at: p.purchased_at,
+    bean_type:    p.bean_type,
+    vendor:       p.vendor,
+    amount_paid:  p.amount_paid,
+    weight_g:     p.weight_g,
+    price_per_g:  p.price_per_g,
+    notes:        p.notes || null
+  }).eq('id', p.id);
+  if (error) throw error;
+}
+
+async function dbDeleteBeanPurchase(id) {
+  const { error } = await _supa.from('bean_purchases').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ── COGS — Packaging Purchases ────────────────────────────────────
+
+async function dbLoadPackagingPurchases() {
+  const { data, error } = await _supa
+    .from('packaging_purchases')
+    .select('*')
+    .order('purchased_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+async function dbSavePackagingPurchase(p) {
+  const { data, error } = await _supa.from('packaging_purchases').insert({
+    purchased_at: p.purchased_at,
+    category:     p.category,
+    description:  p.description,
+    vendor:       p.vendor,
+    quantity:     p.quantity,
+    amount_paid:  p.amount_paid,
+    unit_cost:    p.unit_cost,
+    notes:        p.notes || null
+  }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function dbUpdatePackagingPurchase(p) {
+  const { error } = await _supa.from('packaging_purchases').update({
+    purchased_at: p.purchased_at,
+    category:     p.category,
+    description:  p.description,
+    vendor:       p.vendor,
+    quantity:     p.quantity,
+    amount_paid:  p.amount_paid,
+    unit_cost:    p.unit_cost,
+    notes:        p.notes || null
+  }).eq('id', p.id);
+  if (error) throw error;
+}
+
+async function dbDeletePackagingPurchase(id) {
+  const { error } = await _supa.from('packaging_purchases').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ── COGS — Equipment Purchases ────────────────────────────────────
+
+async function dbLoadEquipmentPurchases() {
+  const { data, error } = await _supa
+    .from('equipment_purchases')
+    .select('*')
+    .order('purchased_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+async function dbSaveEquipmentPurchase(p) {
+  const { data, error } = await _supa.from('equipment_purchases').insert({
+    purchased_at: p.purchased_at,
+    item_name:    p.item_name,
+    vendor:       p.vendor,
+    amount_paid:  p.amount_paid,
+    notes:        p.notes || null
+  }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function dbUpdateEquipmentPurchase(p) {
+  const { error } = await _supa.from('equipment_purchases').update({
+    purchased_at: p.purchased_at,
+    item_name:    p.item_name,
+    vendor:       p.vendor,
+    amount_paid:  p.amount_paid,
+    notes:        p.notes || null
+  }).eq('id', p.id);
+  if (error) throw error;
+}
+
+async function dbDeleteEquipmentPurchase(id) {
+  const { error } = await _supa.from('equipment_purchases').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ── COGS — Batches ────────────────────────────────────────────────
+
+async function dbLoadBatches() {
+  const { data, error } = await _supa
+    .from('batches')
+    .select('*')
+    .order('brewed_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+async function dbSaveBatch(b) {
+  const { data, error } = await _supa.from('batches').insert({
+    brewed_at:        b.brewed_at,
+    sku_id:           b.sku_id || null,
+    sku_name:         b.sku_name,
+    beans_used:       b.beans_used,
+    bottles_produced: b.bottles_produced,
+    bean_cost:        b.bean_cost,
+    packaging_cost:   b.packaging_cost,
+    total_cogs:       b.total_cogs,
+    cost_per_bottle:  b.cost_per_bottle,
+    notes:            b.notes || null
+  }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function dbUpdateBatch(b) {
+  const { error } = await _supa.from('batches').update({
+    brewed_at:        b.brewed_at,
+    sku_id:           b.sku_id || null,
+    sku_name:         b.sku_name,
+    beans_used:       b.beans_used,
+    bottles_produced: b.bottles_produced,
+    bean_cost:        b.bean_cost,
+    packaging_cost:   b.packaging_cost,
+    total_cogs:       b.total_cogs,
+    cost_per_bottle:  b.cost_per_bottle,
+    notes:            b.notes || null
+  }).eq('id', b.id);
+  if (error) throw error;
+}
+
+async function dbDeleteBatch(id) {
+  const { error } = await _supa.from('batches').delete().eq('id', id);
+  if (error) throw error;
+}

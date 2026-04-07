@@ -103,6 +103,8 @@ function switchTab(name) {
 
 // ── Inner tab routing (History, Store Hub) ────────────────────────
 
+let _cogsInited = false;
+
 function switchInnerTab(panelId, tabName) {
   const panel = document.getElementById(panelId);
   if (!panel) return;
@@ -113,6 +115,12 @@ function switchInnerTab(panelId, tabName) {
   panel.querySelectorAll('.inner-panel').forEach(p =>
     p.classList.toggle('active', p.id === 'inner-' + tabName)
   );
+
+  // Lazy-init COGS on first open
+  if (tabName === 'cogs' && !_cogsInited) {
+    _cogsInited = true;
+    if (typeof initCogs === 'function') initCogs();
+  }
 }
 
 // ── PIN screen ────────────────────────────────────────────────────
