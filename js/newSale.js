@@ -119,10 +119,45 @@ function updateOrderTotal() {
   el.textContent = fmtMoney(Math.max(0, subtotal - formReturns * 3));
 }
 
+// ── Email confirmation ────────────────────────────────────────────
+
+async function sendConfirmationEmail(sale, customerEmail, fulfillmentType, fulfillmentWindow) {
+  if (!customerEmail) return; // skip silently if no email provided
+
+  const orderNumber = `FE-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${String(sale.id).slice(-4)}`;
+
+  try {
+    await fetch(`${SUPA_URL}/functions/v1/send-confirmation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPA_KEY}`
+      },
+      body: JSON.stringify({
+        customer_email:      customerEmail,
+        customer_first_name: sale.name.split(' ')[0],
+        order_number:        orderNumber,
+        items:               sale.items.map(i => ({
+          name:  i.skuName,
+          qty:   i.qty,
+          price: `$${(i.price * i.qty).toFixed(2)}`
+        })),
+        order_total:         `$${sale.total.toFixed(2)}`,
+        fulfillment_type:    fulfillmentType  || 'Pickup window',
+        fulfillment_window:  fulfillmentWindow || "TBC — we'll be in touch"
+      })
+    });
+    console.log('✉ Confirmation email sent to', customerEmail);
+  } catch(e) {
+    console.error('Email send failed (non-blocking):', e);
+  }
+}
+
 // ── Sale submission ───────────────────────────────────────────────
 
 async function logSale() {
-  const name = document.getElementById('f-name').value.trim();
+  const name  = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
   if (!name)        { alert('Enter a customer name.');    return; }
   if (!cart.length) { alert('Add at least one item.');    return; }
   if (!formPay)     { alert('Select a payment method.'); return; }
@@ -163,6 +198,9 @@ async function logSale() {
 
   dbSaveOrder(sale).catch(e => console.error('Save order failed:', e));
 
+  // Send confirmation email — non-blocking, won't affect sale flow if it fails
+  sendConfirmationEmail(sale, email, null, null);
+
   renderDashboard();
   if (typeof renderHistory === 'function') renderHistory();
 
@@ -177,6 +215,7 @@ async function logSale() {
 function logAnother() {
   cart = []; formPay = null; formReturns = 0;
   document.getElementById('f-name').value           = '';
+  document.getElementById('f-email').value          = '';
   document.getElementById('f-returns').textContent  = '0';
   document.querySelectorAll('.pay-pill').forEach(p => p.classList.remove('selected'));
   document.getElementById('sale-form-wrap').style.display = 'block';
@@ -410,6 +449,9 @@ async function confirmPendingOrder() {
   // Persist: status, pay, total, discount + qty edits + removed items
   dbConfirmPendingOrder(o.id, pay, pendingModalItems, total, discount)
     .catch(e => console.error('Confirm pending failed:', e));
+
+  // Send confirmation email using email captured from order.html pre-order
+  sendConfirmationEmail(sale, o.customer_email || null, o.fulfillment_type, o.fulfillment_window);
 
   closePendingModal();
   loadPendingForNewSale();
