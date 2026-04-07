@@ -93,22 +93,24 @@ async function dbLoadOrders() {
 
 // Write a walk-up sale as a completed order
 async function dbSaveOrder(sale) {
-  // Upsert customer by name — email captured separately in orders.customer_email
+  // Deduplicate customers by email (most reliable) then fall back to name
   let customerId = null;
-  const { data: existing } = await _supa
-    .from('customers')
-    .select('id, total_orders')
-    .eq('name', sale.name)
-    .maybeSingle();
+  const customerQuery = sale.email
+    ? _supa.from('customers').select('id, total_orders, email').eq('email', sale.email)
+    : _supa.from('customers').select('id, total_orders, email').eq('name', sale.name);
+
+  const { data: existing } = await customerQuery.maybeSingle();
 
   if (existing) {
     customerId = existing.id;
-    await _supa.from('customers')
-      .update({ total_orders: (existing.total_orders || 0) + 1 })
-      .eq('id', customerId);
+    // Also backfill email if we now have it and didn't before
+    const updates = { total_orders: (existing.total_orders || 0) + 1 };
+    if (sale.email && !existing.email) updates.email = sale.email;
+    await _supa.from('customers').update(updates).eq('id', customerId);
   } else {
     const { data: newCust } = await _supa.from('customers').insert({
       name:            sale.name,
+      email:           sale.email || null,
       first_order_at:  new Date().toISOString(),
       total_orders:    1
     }).select().single();

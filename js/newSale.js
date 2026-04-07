@@ -158,7 +158,7 @@ async function logSale() {
   }, 0);
   const total = formPay === 'Gift' ? 0 : Math.max(0, subtotal - disc);
 
-  // Deduct sold counts optimistically
+  // Optimistically deduct sold counts
   cart.forEach(item => {
     const sku = state.skus.find(s => s.id === item.skuId);
     if (sku) {
@@ -183,24 +183,48 @@ async function logSale() {
     createdAt: now.toISOString()
   };
 
-  state.orders.unshift(sale);
-  saveLocal();
+  // Disable button to prevent double-submit
+  const btn = document.querySelector('.submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
 
-  // DB trigger fires on insert → sends confirmation email automatically
-  dbSaveOrder(sale).catch(e => console.error('Save order failed:', e));
+  try {
+    state.orders.unshift(sale);
+    saveLocal();
 
-  // Persistent email status on success screen
-  setSuccessEmailStatus(email);
+    // Await the DB save — email trigger fires after items insert
+    await dbSaveOrder(sale);
 
-  renderDashboard();
-  if (typeof renderHistory === 'function') renderHistory();
+    setSuccessEmailStatus(email);
+    renderDashboard();
+    if (typeof renderHistory === 'function') renderHistory();
 
-  document.getElementById('sale-form-wrap').style.display = 'none';
-  document.getElementById('sale-success').classList.add('show');
-  document.getElementById('success-name').textContent = `${name} — ${fmtMoney(total)}`;
-  const lines = sale.items.map(i => `${i.skuName} ×${i.qty}`).join(', ');
-  document.getElementById('success-detail').textContent = lines +
-    (formReturns > 0 ? ` · ${formReturns} bottle${formReturns > 1 ? 's' : ''} returned` : '');
+    document.getElementById('sale-form-wrap').style.display = 'none';
+    document.getElementById('sale-success').classList.add('show');
+    document.getElementById('success-name').textContent = `${name} — ${fmtMoney(total)}`;
+    const lines = sale.items.map(i => `${i.skuName} ×${i.qty}`).join(', ');
+    document.getElementById('success-detail').textContent = lines +
+      (formReturns > 0 ? ` · ${formReturns} bottle${formReturns > 1 ? 's' : ''} returned` : '');
+
+  } catch (e) {
+    console.error('Save order failed:', e);
+
+    // Roll back optimistic updates
+    state.orders.shift();
+    saveLocal();
+    cart.forEach(item => {
+      const sku = state.skus.find(s => s.id === item.skuId);
+      if (sku) {
+        sku.sold -= item.qty;
+        dbUpdateSkuSold(sku.id, sku.sold).catch(() => {});
+      }
+    });
+    renderDashboard();
+
+    alert('Failed to save order. Check your connection and try again.');
+
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Log Sale'; }
+  }
 }
 
 function logAnother() {
