@@ -70,12 +70,17 @@ function _beanNameDatalist() {
 async function initCogs() {
   renderCogsShell();
   try {
-    [_beans, _packaging, _equipment, _batches] = await Promise.all([
+    // Beans and packaging are never in shared state — always fetch fresh
+    // Equipment and batches are loaded at boot into state — seed from there,
+    // avoiding 2 redundant round-trips every time the COGS tab first opens
+    const [beans, packaging] = await Promise.all([
       dbLoadBeanPurchases(),
-      dbLoadPackagingPurchases(),
-      dbLoadEquipmentPurchases(),
-      dbLoadBatches()
+      dbLoadPackagingPurchases()
     ]);
+    _beans     = beans;
+    _packaging = packaging;
+    _equipment = state.equipment.length ? [...state.equipment] : await dbLoadEquipmentPurchases();
+    _batches   = state.batches.length   ? [...state.batches]   : await dbLoadBatches();
     renderBeans();
     renderPackaging();
     renderEquipment();

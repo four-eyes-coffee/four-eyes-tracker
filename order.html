@@ -7,23 +7,39 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
-  :root { --black:#000; --white:#fff; --yellow:#e6ff00; --card:#111; --border:rgba(255,255,255,0.12); --muted:rgba(255,255,255,0.35); }
+  /* ── Brand tokens ──────────────────────────────────────────── */
+  :root {
+    --black:  #000;
+    --white:  #fff;
+    --yellow: #e6ff00;
+    --blue:   #2033ff;
+    --card:   #111;
+    --border: rgba(255,255,255,0.12);
+    --muted:  rgba(255,255,255,0.35);
+    --accent: var(--yellow);
+  }
+  body.theme-public { --accent: var(--blue); }
+  body.theme-family { --accent: var(--yellow); }
+
   * { box-sizing:border-box; margin:0; padding:0; -webkit-text-size-adjust:100%; }
   html,body { width:100%; overflow-x:hidden; }
   body { background:var(--black); color:var(--white); font-family:'Rubik',sans-serif; min-height:100vh; padding-bottom:60px; }
+
+  /* ── Header ───────────────────────────────────────────────── */
   header { padding:16px 20px 14px; border-bottom:3px solid var(--yellow); display:flex; align-items:center; justify-content:center; }
-  .logo-txt { font-size:20px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:var(--yellow); }
   .back-link { text-align:center; padding:10px 0 0; }
   .back-link a { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--white); text-decoration:underline; text-underline-offset:3px; }
   .container { width:100%; max-width:520px; margin:0 auto; padding:20px 16px; }
 
-  /* STEPS */
+  /* ── Step dots ─────────────────────────────────────────────── */
   .steps { display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:24px; }
   .step { width:28px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; transition:background 0.3s; }
-  .step.active { background:var(--yellow); }
-  .step.done { background:rgba(230,255,0,0.4); }
+  .step.active { background:var(--accent); }
+  /* done state: explicit rgba per theme — avoids color-mix() Safari 15 issue */
+  body.theme-family .step.done { background:rgba(230,255,0,0.4); }
+  body.theme-public .step.done { background:rgba(32,51,255,0.4); }
 
-  /* SCREENS */
+  /* ── Screens ──────────────────────────────────────────────── */
   .screen { display:none; width:100%; }
   .screen.active { display:block; }
   .screen-title { font-size:22px; font-weight:900; text-transform:uppercase; letter-spacing:-0.5px; margin-bottom:6px; }
@@ -31,78 +47,99 @@
   .fsec { font-size:10px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; margin-top:20px; }
   .fsec:first-child { margin-top:0; }
 
-  /* INPUTS */
+  /* ── Inputs ───────────────────────────────────────────────── */
   .field { margin-bottom:14px; }
   .field label { display:block; font-size:10px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
   .field input { width:100%; padding:15px 14px; background:#000; border:2px solid var(--border); border-radius:3px; font-family:'Rubik',sans-serif; font-size:16px; font-weight:500; color:var(--white); outline:none; transition:border-color 0.15s; -webkit-appearance:none; }
-  .field input:focus { border-color:var(--yellow); }
+  .field input:focus { border-color:var(--accent); }
   .field input::placeholder { color:rgba(255,255,255,0.2); }
 
-  /* CODE SCREEN */
+  /* ── Code entry ───────────────────────────────────────────── */
   .code-input { width:100%; padding:22px 16px; background:#000; border:2px solid var(--border); border-radius:3px; font-family:'Rubik',sans-serif; font-size:20px; font-weight:900; color:var(--yellow); outline:none; text-align:center; letter-spacing:3px; text-transform:uppercase; transition:border-color 0.15s; -webkit-appearance:none; }
   .code-input:focus { border-color:var(--yellow); }
   .code-input::placeholder { color:rgba(255,255,255,0.15); font-size:13px; letter-spacing:1px; font-weight:500; }
   .code-error { font-size:12px; color:#ff4444; font-weight:700; letter-spacing:1px; margin-top:10px; display:none; text-align:center; }
 
-  /* UNLOCK MOMENT */
-  .unlock-wrap { text-align:center; padding:40px 0 24px; }
-  .unlock-check { font-size:52px; color:var(--yellow); margin-bottom:16px; }
-  .unlock-msg { font-size:20px; font-weight:900; text-transform:uppercase; letter-spacing:-0.5px; line-height:1.4; }
-  .unlock-sub { font-size:13px; color:var(--muted); margin-top:10px; line-height:1.6; max-width:300px; margin-left:auto; margin-right:auto; }
+  /* ── Unlock / welcome animations ───────────────────────────── */
+  @keyframes coffeeDrip {
+    0%   { transform:translateY(-50px) scaleY(1.4); opacity:0; }
+    55%  { transform:translateY(5px)   scaleY(0.85); opacity:1; }
+    72%  { transform:translateY(-4px)  scaleY(1.05); }
+    88%  { transform:translateY(2px)   scaleY(0.97); }
+    100% { transform:translateY(0)     scaleY(1);    opacity:1; }
+  }
+  @keyframes heroSlide {
+    from { opacity:0; transform:translateY(32px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity:0; }
+    to   { opacity:1; }
+  }
+  .unlock-wrap { text-align:center; padding:48px 0 20px; }
+  .drip-row { display:flex; gap:10px; justify-content:center; margin-bottom:28px; }
+  .drip { width:10px; height:10px; border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+    background:var(--accent); opacity:0; animation:coffeeDrip 0.55s cubic-bezier(.36,.07,.19,.97) forwards; }
+  .drip:nth-child(1) { animation-delay:0s; }
+  .drip:nth-child(2) { animation-delay:0.13s; }
+  .drip:nth-child(3) { animation-delay:0.26s; }
+  .unlock-title { font-size:42px; font-weight:900; text-transform:uppercase; letter-spacing:-2px; color:var(--white); line-height:1.05; margin-bottom:12px;
+    opacity:0; animation:heroSlide 0.5s ease 0.55s forwards; }
+  .unlock-sub { font-size:14px; color:var(--muted); line-height:1.65; max-width:280px; margin:0 auto 28px;
+    opacity:0; animation:fadeIn 0.45s ease 0.9s forwards; }
+  .unlock-cta { opacity:0; animation:fadeIn 0.45s ease 1.1s forwards; }
 
-  /* FLAVOR CARDS */
+  /* ── Flavor cards ─────────────────────────────────────────── */
   .flavor-grid { display:flex; flex-direction:column; gap:12px; }
-  .flavor-card { background:var(--card); border:1.5px solid var(--border); border-top:3px solid var(--yellow); border-radius:3px; padding:16px 14px; }
+  .flavor-card { background:var(--card); border:1.5px solid var(--border); border-top:3px solid var(--accent); border-radius:3px; padding:16px 14px; }
   .flavor-card.unavailable { opacity:0.35; pointer-events:none; }
   .flavor-card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; gap:12px; }
   .flavor-info { flex:1; min-width:0; }
   .flavor-name { font-size:15px; font-weight:900; text-transform:uppercase; letter-spacing:0.5px; }
   .flavor-desc { font-size:12px; color:var(--muted); margin-top:5px; line-height:1.5; }
   .flavor-meta { text-align:right; flex-shrink:0; }
-  .flavor-price { font-size:16px; font-weight:900; color:var(--yellow); }
+  .flavor-price { font-size:16px; font-weight:900; color:var(--accent); }
   .flavor-stock { font-size:11px; color:var(--muted); font-weight:500; margin-top:2px; }
   .flavor-qty-row { display:flex; align-items:center; justify-content:space-between; }
+  .qty-left { display:flex; flex-direction:column; gap:2px; }
   .qty-label { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+  .qty-max { font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.2); }
   .qty-controls { display:flex; align-items:center; gap:12px; }
   .qbtn { width:44px; height:44px; border-radius:3px; border:2px solid var(--border); background:transparent; color:var(--white); font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; -webkit-tap-highlight-color:transparent; user-select:none; font-family:'Rubik',sans-serif; }
-  .qbtn:active { background:var(--yellow); color:var(--black); border-color:var(--yellow); }
+  .qbtn:active { background:var(--accent); color:var(--black); border-color:var(--accent); }
   .qty-num { font-size:26px; font-weight:900; min-width:32px; text-align:center; }
 
-  /* COMING SOON */
+  /* ── Coming soon ──────────────────────────────────────────── */
   .coming-soon-wrap { margin-top:28px; }
   .coming-soon-label { font-size:10px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
   .interest-card { background:var(--card); border:1.5px solid var(--border); border-top:3px solid rgba(255,255,255,0.1); border-radius:3px; padding:14px; cursor:pointer; -webkit-tap-highlight-color:transparent; display:flex; align-items:flex-start; gap:14px; transition:border-color 0.12s; }
-  .interest-card.toggled { border-top-color:var(--yellow); border-color:rgba(230,255,0,0.4); }
+  .interest-card.toggled { border-top-color:var(--accent); border-color:rgba(255,255,255,0.2); }
   .interest-check { width:22px; height:22px; min-width:22px; border:2px solid var(--border); border-radius:3px; display:flex; align-items:center; justify-content:center; margin-top:2px; transition:all 0.12s; }
-  .interest-check.on { background:var(--yellow); border-color:var(--yellow); }
+  .interest-check.on { background:var(--accent); border-color:var(--accent); }
   .interest-check.on::after { content:'✓'; font-size:13px; font-weight:900; color:var(--black); }
   .interest-info { flex:1; }
   .interest-name { font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
   .interest-sub { font-size:12px; color:var(--muted); margin-top:4px; line-height:1.5; }
 
-  /* FULFILLMENT */
+  /* ── Fulfillment ──────────────────────────────────────────── */
   .option-pills { display:flex; gap:8px; margin-bottom:16px; }
   .option-pill { flex:1; padding:14px 16px; border-radius:3px; border:2px solid var(--border); background:transparent; font-family:'Rubik',sans-serif; font-size:13px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--muted); cursor:pointer; text-align:center; transition:all 0.12s; -webkit-tap-highlight-color:transparent; }
-  .option-pill.selected { background:var(--yellow); color:var(--black); border-color:var(--yellow); }
+  .option-pill.selected { background:var(--accent); color:var(--black); border-color:var(--accent); }
   .window-grid { display:flex; flex-direction:column; gap:10px; }
   .window-card { background:var(--card); border:1.5px solid var(--border); border-radius:3px; padding:16px; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:border-color 0.12s; }
-  .window-card.selected { border-color:var(--yellow); }
+  .window-card.selected { border-color:var(--accent); }
   .window-card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; gap:8px; }
   .window-day { font-size:14px; font-weight:900; text-transform:uppercase; letter-spacing:0.5px; }
-  .window-card.selected .window-day { color:var(--yellow); }
+  .window-card.selected .window-day { color:var(--accent); }
   .window-time { font-size:12px; color:var(--muted); font-weight:500; flex-shrink:0; }
   .window-detail { font-size:12px; color:var(--muted); line-height:1.6; }
   .window-copy { font-size:11px; color:rgba(255,255,255,0.35); margin-top:8px; font-style:italic; }
 
-  /* SMS */
-  .sms-row { display:flex; align-items:flex-start; gap:14px; margin-top:16px; padding:16px; background:var(--card); border:1.5px solid var(--border); border-radius:3px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .sms-check { width:24px; height:24px; min-width:24px; border:2px solid var(--border); border-radius:3px; display:flex; align-items:center; justify-content:center; margin-top:1px; transition:all 0.12s; }
-  .sms-check.checked { background:var(--yellow); border-color:var(--yellow); }
-  .sms-check.checked::after { content:'✓'; font-size:14px; font-weight:900; color:var(--black); }
-  .sms-text { font-size:13px; color:var(--muted); line-height:1.6; }
-  .sms-text b { color:var(--white); }
+  /* ── Contact note ─────────────────────────────────────────── */
+  .contact-note { padding:14px 16px; background:var(--card); border:1.5px solid var(--border); border-radius:3px; margin-top:16px; font-size:12px; color:var(--muted); line-height:1.7; }
+  .contact-note b { color:var(--white); font-weight:700; }
 
-  /* ORDER SUMMARY */
+  /* ── Order summary ────────────────────────────────────────── */
   .order-sum-card { background:var(--yellow); color:var(--black); border-radius:3px; padding:18px 16px; margin-bottom:16px; }
   .order-sum-title { font-size:9px; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:rgba(0,0,0,0.45); margin-bottom:12px; }
   .order-sum-row { display:flex; justify-content:space-between; font-size:14px; font-weight:500; margin-bottom:6px; }
@@ -115,18 +152,18 @@
   .order-sum-fulfil { font-size:11px; color:rgba(0,0,0,0.5); margin-top:8px; font-weight:700; }
   .order-sum-interest { font-size:11px; color:rgba(0,0,0,0.45); margin-top:5px; font-style:italic; }
 
-  /* BUTTONS */
-  .primary-btn { width:100%; padding:18px; background:var(--yellow); color:var(--black); border:none; border-radius:3px; font-family:'Rubik',sans-serif; font-size:13px; font-weight:900; letter-spacing:2px; text-transform:uppercase; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  /* ── Buttons ──────────────────────────────────────────────── */
+  .primary-btn { width:100%; padding:18px; background:var(--accent); color:var(--black); border:none; border-radius:3px; font-family:'Rubik',sans-serif; font-size:13px; font-weight:900; letter-spacing:2px; text-transform:uppercase; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .primary-btn:active { opacity:0.8; }
   .primary-btn:disabled { opacity:0.3; cursor:not-allowed; }
   .secondary-btn { width:100%; padding:15px; background:transparent; border:2px solid var(--border); border-radius:3px; font-family:'Rubik',sans-serif; font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); cursor:pointer; margin-top:10px; -webkit-tap-highlight-color:transparent; }
   .secondary-btn:active { border-color:var(--white); color:var(--white); }
 
-  /* CONFIRMATION */
+  /* ── Confirmation ─────────────────────────────────────────── */
   .confirm-icon { font-size:56px; text-align:center; margin-bottom:16px; }
-  .confirm-code { background:var(--card); border:1.5px solid var(--yellow); border-radius:3px; padding:18px; text-align:center; margin:20px 0 16px; }
+  .confirm-code { background:var(--card); border:1.5px solid var(--accent); border-radius:3px; padding:18px; text-align:center; margin:20px 0 16px; }
   .confirm-code-label { font-size:9px; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
-  .confirm-code-val { font-size:20px; font-weight:900; color:var(--yellow); letter-spacing:2px; word-break:break-all; }
+  .confirm-code-val { font-size:20px; font-weight:900; color:var(--accent); letter-spacing:2px; word-break:break-all; }
   .confirm-venmo { background:var(--card); border:1.5px solid var(--border); border-radius:3px; padding:16px; margin-bottom:16px; }
   .confirm-venmo-label { font-size:9px; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
   .confirm-venmo-handle { font-size:22px; font-weight:900; }
@@ -145,25 +182,29 @@
 </head>
 <body>
 
-<header><span class="logo-txt">Four Eyes Coffee</span></header>
+<header>
+  <img src="assets/logo.png" alt="Four Eyes Coffee" style="height:42px; width:auto; display:block;">
+</header>
 <div class="back-link"><a href="https://foureyes.coffee/cold-brew" target="_top">&#x2190; foureyes.coffee</a></div>
 
 <div class="container">
 
-  <!-- Step bar: 4 dots = flavors / fulfillment / details / review -->
-  <div class="steps" id="step-bar">
-    <div class="step active" id="step-0"></div>
+  <!-- Step bar — hidden until code verified -->
+  <div class="steps" id="step-bar" style="display:none;">
+    <div class="step" id="step-0"></div>
     <div class="step" id="step-1"></div>
     <div class="step" id="step-2"></div>
     <div class="step" id="step-3"></div>
   </div>
 
-  <!-- CODE -->
+  <!-- CODE ENTRY -->
   <div class="screen active" id="screen-code">
     <div class="screen-title">Enter Code</div>
     <div class="screen-sub">Got a drop code? Enter it below to unlock this batch.</div>
-    <input class="code-input" type="text" id="code-input" placeholder="YOUR·CODE" autocomplete="off" autocorrect="off" spellcheck="false">
-    <div class="code-error" id="code-error">Invalid or expired code. Try again.</div>
+    <input class="code-input" type="text" id="code-input" placeholder="YOUR·CODE"
+           autocomplete="off" autocorrect="off" spellcheck="false"
+           onkeydown="if(event.key==='Enter') verifyCode()">
+    <div class="code-error" id="code-error"></div>
     <button class="primary-btn" style="margin-top:16px;" onclick="verifyCode()">Unlock Drop</button>
   </div>
 
@@ -176,36 +217,40 @@
       <div class="coming-soon-label">New &amp; In Testing</div>
       <div id="coming-soon-grid"></div>
     </div>
-    <button class="primary-btn" style="margin-top:20px;" onclick="goToFulfillment()" id="flavors-next-btn" disabled>Continue</button>
+    <button class="primary-btn" style="margin-top:20px;" onclick="goToFulfillment()"
+            id="flavors-next-btn" disabled>Continue</button>
   </div>
 
   <!-- FULFILLMENT -->
   <div class="screen" id="screen-fulfillment">
-    <div class="screen-title">Pickup or Delivery</div>
-    <div class="screen-sub" id="fulfillment-sub">Choose how you'd like to receive your order.</div>
-    <div class="fsec">Method</div>
-    <div class="option-pills" id="fulfillment-pills">
+    <div class="screen-title" id="fulfillment-title">Pickup</div>
+    <div class="screen-sub" id="fulfillment-sub">We'll have your order ready for pickup.</div>
+    <div class="fsec" id="method-fsec" style="display:none;">Method</div>
+    <div class="option-pills" id="fulfillment-pills" style="display:none;">
       <button class="option-pill" id="pill-pickup" onclick="selectFulfillment('pickup',this)">Pickup</button>
       <button class="option-pill" id="pill-delivery" onclick="selectFulfillment('delivery',this)">Delivery</button>
     </div>
-    <div id="window-wrap" style="display:none;">
+    <div id="window-wrap">
       <div class="fsec">Select Window</div>
       <div class="window-grid" id="window-grid"></div>
     </div>
-    <button class="primary-btn" style="margin-top:20px;" onclick="goToDetails()" id="fulfillment-next-btn" disabled>Continue</button>
+    <button class="primary-btn" style="margin-top:20px;" onclick="goToDetails()"
+            id="fulfillment-next-btn" disabled>Continue</button>
     <button class="secondary-btn" onclick="goToStep(0)">Back</button>
   </div>
 
   <!-- DETAILS -->
   <div class="screen" id="screen-details">
     <div class="screen-title">Your Details</div>
-    <div class="screen-sub">We'll use this to confirm your order.</div>
-    <div class="field"><label>Full Name</label><input type="text" id="d-name" placeholder="First and last name" autocomplete="name"></div>
-    <div class="field"><label>Email</label><input type="email" id="d-email" placeholder="your@email.com" autocomplete="email"></div>
-    <div class="field"><label>Phone</label><input type="tel" id="d-phone" placeholder="+1 (213) 000-0000" autocomplete="tel"></div>
-    <div class="sms-row" onclick="toggleSMS()">
-      <div class="sms-check" id="sms-check"></div>
-      <div class="sms-text"><b>Text me order updates</b><br>Get a text when your order is confirmed. Message &amp; data rates may apply.</div>
+    <div class="screen-sub">We'll use these to confirm and coordinate your order.</div>
+    <div class="field"><label>Full Name</label>
+      <input type="text" id="d-name" placeholder="First and last name" autocomplete="name"></div>
+    <div class="field"><label>Email</label>
+      <input type="email" id="d-email" placeholder="your@email.com" autocomplete="email"></div>
+    <div class="field"><label>Phone</label>
+      <input type="tel" id="d-phone" placeholder="+1 (213) 000-0000" autocomplete="tel"></div>
+    <div class="contact-note">
+      <b>Your email</b> will be used for order confirmation.<span id="delivery-phone-note" style="display:none;"> <b>Your phone number</b> will be used to reach you on the day of delivery.</span>
     </div>
     <button class="primary-btn" style="margin-top:20px;" onclick="goToReview()">Review Order</button>
     <button class="secondary-btn" onclick="goToStep(1)">Back</button>
@@ -240,7 +285,7 @@
       <div class="confirm-interest-label">On Your Radar</div>
       <div class="confirm-interest-val" id="confirm-interest-val"></div>
     </div>
-    <p class="confirm-note"><b>What's next?</b> Expect a confirmation from us before your pickup or delivery window. Questions? DM us on Instagram.</p>
+    <p class="confirm-note"><b>What's next?</b> Expect a confirmation before your pickup or delivery window. Questions? DM us on Instagram.</p>
   </div>
 
 </div>
@@ -250,18 +295,18 @@
   const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxbWRucmxwZmJubnh4dGdicmdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MzE5MjksImV4cCI6MjA5MDQwNzkyOX0.e6kvqx3PHLkpJJc6PiJ6TmBS9f9f0gk5-r2i_vnx5xQ';
   let supa;
 
-  // ── State ────────────────────────────────────────────────────────
-  let codeType = 'public'; // 'family' | 'public'
+  // ── State ──────────────────────────────────────────────────────
+  let codeType = 'public';
   let skus     = [];
   const order  = {
     cart: [], interest: [],
     fulfillment: null, window: null,
     name: '', email: '', phone: '',
-    smsOptIn: false, confirmCode: ''
+    confirmCode: ''
   };
   const MAX_QTY = { family: 6, public: 4 };
 
-  // ── Init ─────────────────────────────────────────────────────────
+  // ── Supabase init ───────────────────────────────────────────────
   function waitForSupa(cb, n = 0) {
     if (typeof supabase !== 'undefined') cb();
     else if (n < 20) setTimeout(() => waitForSupa(cb, n + 1), 100);
@@ -280,10 +325,10 @@
         description: s.description || '',
         sku_type: s.sku_type || 'production'
       }));
-    } catch(e) { console.error('Load SKUs failed:', e); }
+    } catch(e) { console.error('Load SKUs:', e); }
   }
 
-  // ── Navigation ───────────────────────────────────────────────────
+  // ── Navigation ──────────────────────────────────────────────────
   const SCREENS = ['screen-flavors','screen-fulfillment','screen-details','screen-review'];
 
   function goToStep(n) {
@@ -296,7 +341,7 @@
     window.scrollTo(0, 0);
   }
 
-  // ── Code Verification ────────────────────────────────────────────
+  // ── Code verification ───────────────────────────────────────────
   async function verifyCode() {
     const raw   = document.getElementById('code-input').value.trim().toUpperCase();
     const errEl = document.getElementById('code-error');
@@ -306,18 +351,20 @@
     try {
       const { data } = await supa.from('access_codes')
         .select('*').eq('active', true).ilike('code', raw).maybeSingle();
-      if (!data) { errEl.style.display = 'block'; errEl.textContent = 'Invalid or expired code. Try again.'; return; }
+
+      if (!data) {
+        errEl.style.display = 'block'; errEl.textContent = 'Invalid or expired code. Try again.'; return;
+      }
       if (data.expires_at && new Date(data.expires_at) < new Date()) {
         errEl.style.display = 'block'; errEl.textContent = 'This code has expired.'; return;
       }
+
       codeType = data.code_type || 'public';
+      document.body.classList.add(codeType === 'family' ? 'theme-family' : 'theme-public');
+
       showUnlockMoment(codeType);
-      await loadSKUs();
-      setTimeout(() => {
-        document.getElementById('screen-code').classList.remove('active');
-        renderFlavors();
-        goToStep(0);
-      }, 1500);
+      loadSKUs(); // refresh in background while animation plays
+
     } catch(e) {
       console.error(e);
       errEl.style.display = 'block'; errEl.textContent = 'Something went wrong. Try again.';
@@ -326,24 +373,42 @@
 
   function showUnlockMoment(type) {
     const isFamily = type === 'family';
+    const headline = isFamily ? "You're<br>in early." : "Drop<br>unlocked.";
+    const subtext  = isFamily
+      ? "Here's what we brewed this week. Order freely — we brew your batch first."
+      : "Limited run. Grab your bottles before they're gone.";
+
     document.getElementById('screen-code').innerHTML = `
       <div class="unlock-wrap">
-        <div class="unlock-check">✓</div>
-        <div class="unlock-msg">${isFamily ? "You're in early." : "Drop unlocked."}</div>
-        <div class="unlock-sub">${isFamily
-          ? "Here's what we've got this week. Order freely — we brew to you first."
-          : "Limited supply. Grab your bottles before they're gone."}</div>
+        <div class="drip-row">
+          <div class="drip"></div>
+          <div class="drip"></div>
+          <div class="drip"></div>
+        </div>
+        <div class="unlock-title">${headline}</div>
+        <div class="unlock-sub">${subtext}</div>
+        <div class="unlock-cta">
+          <button class="primary-btn" onclick="proceedToFlavors()">Choose Your Bottles &rarr;</button>
+        </div>
       </div>`;
   }
 
-  // ── Flavors ──────────────────────────────────────────────────────
+  function proceedToFlavors() {
+    document.getElementById('screen-code').classList.remove('active');
+    document.getElementById('step-bar').style.display = 'flex';
+    renderFlavors();
+    goToStep(0);
+  }
+
+  // ── Flavors ─────────────────────────────────────────────────────
   function renderFlavors() {
     const isFamily = codeType === 'family';
     const maxQty   = MAX_QTY[codeType] || 4;
-    const sub      = document.getElementById('flavors-sub');
+
+    const sub = document.getElementById('flavors-sub');
     if (sub) sub.textContent = isFamily
-      ? `Up to ${maxQty} bottles per flavor. We brew your batch first.`
-      : `Up to ${maxQty} bottles per flavor. Grab yours while they last.`;
+      ? "Choose your bottles. Up to 6 per flavor."
+      : "Choose your bottles. Up to 4 per flavor while supply lasts.";
 
     const production = skus.filter(s => (s.sku_type || 'production') === 'production');
     const test       = skus.filter(s => s.sku_type === 'test');
@@ -365,7 +430,10 @@
               </div>
             </div>
             <div class="flavor-qty-row">
-              <span class="qty-label">Quantity</span>
+              <div class="qty-left">
+                <span class="qty-label">Quantity</span>
+                <span class="qty-max">Max ${maxQty} per flavor</span>
+              </div>
               <div class="qty-controls">
                 <button class="qbtn" onclick="changeQty(${sku.id},-1)">&#x2212;</button>
                 <span class="qty-num" id="qty-${sku.id}">${qty}</span>
@@ -374,15 +442,15 @@
             </div>
           </div>`;
         }).join('')
-      : '<div style="text-align:center;color:var(--muted);padding:20px 0;font-size:13px;">No flavors available right now.</div>';
+      : '<div style="text-align:center;color:var(--muted);padding:24px 0;font-size:13px;">No flavors available right now.</div>';
 
     const csWrap = document.getElementById('coming-soon-wrap');
-    const csGrid = document.getElementById('coming-soon-grid');
     if (test.length) {
       csWrap.style.display = 'block';
-      csGrid.innerHTML = test.map(sku => {
+      document.getElementById('coming-soon-grid').innerHTML = test.map(sku => {
         const isOn = order.interest.includes(sku.name);
-        return `<div class="interest-card${isOn ? ' toggled' : ''}" onclick="toggleInterest('${esc(sku.name)}',this,${sku.id})">
+        return `<div class="interest-card${isOn ? ' toggled' : ''}"
+                  onclick="toggleInterest('${esc(sku.name)}',this,${sku.id})">
           <div class="interest-check${isOn ? ' on' : ''}" id="icheck-${sku.id}"></div>
           <div class="interest-info">
             <div class="interest-name">${esc(sku.name)}</div>
@@ -405,8 +473,8 @@
     let item       = order.cart.find(c => c.skuId === skuId);
     let nq         = Math.max(0, Math.min(maxQty, (item?.qty || 0) + delta));
     if (!isFamily) nq = Math.min(avail, nq);
-    if (nq === 0)        order.cart = order.cart.filter(c => c.skuId !== skuId);
-    else if (item)       item.qty   = nq;
+    if (nq === 0)   order.cart = order.cart.filter(c => c.skuId !== skuId);
+    else if (item)  item.qty   = nq;
     else order.cart.push({ skuId, skuName: sku.name, qty: nq, price: sku.price });
     const el = document.getElementById('qty-' + skuId);
     if (el) el.textContent = nq;
@@ -427,7 +495,7 @@
     document.getElementById('icheck-' + skuId)?.classList.toggle('on', isOn);
   }
 
-  // ── Fulfillment ──────────────────────────────────────────────────
+  // ── Fulfillment ─────────────────────────────────────────────────
   const WINDOWS = {
     pickup: [{
       label: 'Sunday Pickup', time: '2:00 – 4:00 PM PT',
@@ -436,7 +504,7 @@
     }],
     delivery: [
       { label: 'West Side — Monday', time: 'Window TBD',
-        detail: 'Santa Monica · Culver City · Venice · West Hollywood · Beverly Hills and surrounding areas',
+        detail: 'Santa Monica · Culver City · Venice · West Hollywood · Torrance · South Bay and surrounding areas',
         copy: "We'll come to you. We'll reach out to confirm your window. Payment due at drop." },
       { label: 'East Side — Tuesday', time: 'Window TBD',
         detail: 'Pasadena · SGV · Silver Lake · Echo Park · Downtown LA and surrounding areas',
@@ -446,29 +514,44 @@
 
   function goToFulfillment() {
     if (!order.cart.length) return;
-    const deliveryPill = document.getElementById('pill-delivery');
-    if (deliveryPill) deliveryPill.style.display = codeType === 'family' ? '' : 'none';
-    const sub = document.getElementById('fulfillment-sub');
-    if (sub) sub.textContent = codeType === 'family'
+    const isFamily = codeType === 'family';
+
+    document.getElementById('fulfillment-title').textContent = isFamily ? 'Pickup or Delivery' : 'Pickup';
+    document.getElementById('fulfillment-sub').textContent  = isFamily
       ? "Choose how you'd like to receive your order. Payment is due at pickup or delivery."
-      : "We'll have your order ready for pickup. Payment is due at pickup.";
-    // Auto-select pickup for public
-    if (codeType === 'public') selectFulfillment('pickup', document.getElementById('pill-pickup'));
+      : "We'll have your order ready for Sunday pickup. Payment is due at pickup.";
+
+    const methodFsec = document.getElementById('method-fsec');
+    const pills      = document.getElementById('fulfillment-pills');
+    methodFsec.style.display = isFamily ? 'block' : 'none';
+    pills.style.display      = isFamily ? 'flex'  : 'none';
+
+    // Default pickup for both flows
+    selectFulfillment('pickup', document.getElementById('pill-pickup'));
     goToStep(1);
   }
 
   function selectFulfillment(type, el) {
-    order.fulfillment = type; order.window = null;
+    order.fulfillment = type;
+    order.window      = null;
     document.querySelectorAll('.option-pill').forEach(p => p.classList.remove('selected'));
-    el.classList.add('selected');
-    document.getElementById('window-wrap').style.display = 'block';
+    if (el) el.classList.add('selected');
+
+    // Show phone note on details screen when delivery is chosen
+    const phoneNote = document.getElementById('delivery-phone-note');
+    if (phoneNote) phoneNote.style.display = type === 'delivery' ? 'inline' : 'none';
+
     document.getElementById('window-grid').innerHTML = WINDOWS[type].map((w, i) =>
       `<div class="window-card" onclick="selectWindow('${esc(w.label)}',this)" id="wcard-${i}">
-        <div class="window-card-top"><div class="window-day">${w.label}</div><div class="window-time">${w.time}</div></div>
+        <div class="window-card-top">
+          <div class="window-day">${w.label}</div>
+          <div class="window-time">${w.time}</div>
+        </div>
         <div class="window-detail">${w.detail}</div>
         <div class="window-copy">${w.copy}</div>
       </div>`
     ).join('');
+
     document.getElementById('fulfillment-next-btn').disabled = true;
   }
 
@@ -484,31 +567,29 @@
     goToStep(2);
   }
 
-  // ── Details ──────────────────────────────────────────────────────
-  function toggleSMS() {
-    order.smsOptIn = !order.smsOptIn;
-    document.getElementById('sms-check').classList.toggle('checked', order.smsOptIn);
-  }
-
+  // ── Details ─────────────────────────────────────────────────────
   function goToReview() {
     const name  = document.getElementById('d-name').value.trim();
     const email = document.getElementById('d-email').value.trim();
     const phone = document.getElementById('d-phone').value.trim();
-    if (!name)                    { alert('Please enter your name.'); return; }
+    if (!name)                     { alert('Please enter your name.'); return; }
     if (!email || !email.includes('@')) { alert('Please enter a valid email.'); return; }
-    if (!phone)                   { alert('Please enter your phone number.'); return; }
+    if (!phone)                    { alert('Please enter your phone number.'); return; }
     order.name = name; order.email = email; order.phone = phone;
     renderReview();
     goToStep(3);
   }
 
-  // ── Review ───────────────────────────────────────────────────────
+  // ── Review ──────────────────────────────────────────────────────
   function renderReview() {
     const subtotal = order.cart.reduce((a, c) => a + c.price * c.qty, 0);
     document.getElementById('review-summary').innerHTML = `
       <div class="order-sum-title">Order Summary</div>
       ${order.cart.map(c =>
-        `<div class="order-sum-row"><span class="n">${esc(c.skuName)} ×${c.qty}</span><span class="a">$${c.price * c.qty}</span></div>`
+        `<div class="order-sum-row">
+          <span class="n">${esc(c.skuName)} ×${c.qty}</span>
+          <span class="a">$${c.price * c.qty}</span>
+        </div>`
       ).join('')}
       <hr class="order-sum-div">
       <div class="order-sum-total"><span class="l">Total</span><span class="v">$${subtotal}</span></div>
@@ -518,11 +599,10 @@
     document.getElementById('review-details').innerHTML = `
       <div class="confirm-row"><span class="ck">Name</span><span class="cv">${esc(order.name)}</span></div>
       <div class="confirm-row"><span class="ck">Email</span><span class="cv">${esc(order.email)}</span></div>
-      <div class="confirm-row"><span class="ck">Phone</span><span class="cv">${esc(order.phone)}</span></div>
-      <div class="confirm-row"><span class="ck">SMS updates</span><span class="cv">${order.smsOptIn ? '✓ Yes' : 'No'}</span></div>`;
+      <div class="confirm-row"><span class="ck">Phone</span><span class="cv">${esc(order.phone)}</span></div>`;
   }
 
-  // ── Submit ───────────────────────────────────────────────────────
+  // ── Submit ──────────────────────────────────────────────────────
   async function submitOrder() {
     const btn = document.getElementById('submit-btn');
     btn.disabled = true; btn.textContent = 'Placing Order…';
@@ -532,28 +612,28 @@
     const subtotal    = order.cart.reduce((a, c) => a + c.price * c.qty, 0);
 
     try {
-      // Upsert customer by email
       let customerId = null;
       const { data: existing } = await supa.from('customers')
         .select('id,total_orders').eq('email', order.email).maybeSingle();
+
       if (existing) {
         customerId = existing.id;
         await supa.from('customers').update({
-          name: order.name, phone: order.phone, sms_opt_in: order.smsOptIn,
+          name: order.name, phone: order.phone,
           total_orders: (existing.total_orders || 0) + 1
         }).eq('id', customerId);
       } else {
         const { data: nc } = await supa.from('customers').insert({
           name: order.name, email: order.email, phone: order.phone,
-          sms_opt_in: order.smsOptIn, first_order_at: new Date().toISOString(), total_orders: 1
+          first_order_at: new Date().toISOString(), total_orders: 1
         }).select().single();
         if (nc) customerId = nc.id;
       }
 
-      // Build order row — include flavor_interest only if column exists
       const orderRow = {
         customer_id: customerId, customer_name: order.name,
-        status: 'pending', fulfillment_type: order.fulfillment,
+        status: 'pending',
+        fulfillment_type: order.fulfillment,
         fulfillment_window: order.window,
         pay_method: 'Pay at ' + order.fulfillment,
         total: subtotal, notes: confirmCode,
@@ -588,7 +668,10 @@
     document.getElementById('confirm-code-val').textContent = code;
     document.getElementById('confirm-detail').innerHTML = `
       ${order.cart.map(c =>
-        `<div class="confirm-row"><span class="ck">${esc(c.skuName)}</span><span class="cv">×${c.qty} — $${c.price * c.qty}</span></div>`
+        `<div class="confirm-row">
+          <span class="ck">${esc(c.skuName)}</span>
+          <span class="cv">×${c.qty} — $${c.price * c.qty}</span>
+        </div>`
       ).join('')}
       <div class="confirm-row"><span class="ck">Method</span><span class="cv">${order.fulfillment === 'pickup' ? 'Pickup' : 'Delivery'}</span></div>
       <div class="confirm-row"><span class="ck">Window</span><span class="cv">${esc(order.window)}</span></div>

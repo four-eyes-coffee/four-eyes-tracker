@@ -24,7 +24,9 @@ function renderFlavorPicker() {
   const picker = document.getElementById('flavor-picker');
   if (!picker) return;
   const addedIds = cart.map(c => c.skuId);
-  picker.innerHTML = state.skus.map(sku => {
+  picker.innerHTML = state.skus
+    .filter(s => (s.sku_type || 'production') === 'production')
+    .map(sku => {
     const rem     = sku.stock - sku.sold;
     const isAdded = addedIds.includes(sku.id);
     const isOut   = rem === 0;
