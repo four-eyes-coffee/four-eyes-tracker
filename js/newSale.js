@@ -257,9 +257,7 @@ async function loadPendingForNewSale() {
 
     list.innerHTML = _pendingOrders.map(o => {
       const lines       = (o.order_items || []).map(i => `${esc(i.sku_name)} ×${i.qty}`).join(', ');
-      const windowLabel = o.fulfillment_type
-        ? esc(o.fulfillment_type) + (o.fulfillment_window ? ' · ' + esc(o.fulfillment_window) : '')
-        : '';
+      const windowLabel = esc(o.fulfillment_window || o.fulfillment_type || '');
       const dropType  = (o.code_type === 'family') ? 'FAMILY' : 'PUBLIC';
       const dropClass = (o.code_type === 'family') ? 'drop-family' : 'drop-public';
       return `<div class="pending-card ${dropClass}">
