@@ -25,17 +25,43 @@ function fmtGrams(g) {
   return g >= 1000 ? `${(g / 1000).toFixed(2)} kg` : `${Math.round(g)} g`;
 }
 
-// ── Latest price lookups ──────────────────────────────────────────
+// ── Price lookups ─────────────────────────────────────────────────
 
-function latestBeanPrice(beanType) {
-  const key   = beanType.trim().toLowerCase();
-  const match = _beans.find(b => b.bean_type.trim().toLowerCase() === key);
-  return match ? parseFloat(match.price_per_g) : 0;
+// Weighted average across ALL purchases of this bean (AVCO method)
+function avgBeanPriceInfo(beanType) {
+  const key     = (beanType || '').trim().toLowerCase();
+  if (!key) return { ppg: 0, count: 0 };
+  const matches = _beans.filter(b => b.bean_type.trim().toLowerCase() === key);
+  if (!matches.length) return { ppg: 0, count: 0 };
+  const totalPaid  = matches.reduce((s, b) => s + parseFloat(b.amount_paid), 0);
+  const totalGrams = matches.reduce((s, b) => s + parseFloat(b.weight_g),    0);
+  return { ppg: totalGrams > 0 ? totalPaid / totalGrams : 0, count: matches.length };
 }
 
+function latestBeanPrice(beanType) {
+  return avgBeanPriceInfo(beanType).ppg;
+}
+
+// Most recent unit cost for a packaging category
 function latestPackagingUnitCost(category) {
   const match = _packaging.find(p => p.category.toLowerCase() === category.toLowerCase());
   return match ? parseFloat(match.unit_cost) : 0;
+}
+
+// ── Autocomplete datalists ────────────────────────────────────────
+
+function _vendorDatalist() {
+  const vendors = [...new Set([
+    ..._beans.map(b => b.vendor),
+    ..._packaging.map(p => p.vendor),
+    ..._equipment.map(e => e.vendor)
+  ])].filter(Boolean).sort();
+  return `<datalist id="dl-vendors">${vendors.map(v => `<option value="${esc(v)}">`).join('')}</datalist>`;
+}
+
+function _beanNameDatalist() {
+  const names = [...new Set(_beans.map(b => b.bean_type))].filter(Boolean).sort();
+  return `<datalist id="dl-beannames">${names.map(n => `<option value="${esc(n)}">`).join('')}</datalist>`;
 }
 
 // ── Init ──────────────────────────────────────────────────────────
@@ -260,10 +286,11 @@ function openCogsBeanModal(id) {
   const unit = rec ? (rec.weight_g >= 1000 ? 'kg' : 'g') : 'g';
 
   _openCogsModal(rec ? 'Edit Bean Purchase' : 'New Bean Purchase', `
+    ${_vendorDatalist()}${_beanNameDatalist()}
     <div class="field"><label>Bean Name</label>
-      <input id="cb-name" type="text" value="${esc(rec?.bean_type || '')}" placeholder="e.g. Ethiopia Yirgacheffe"></div>
+      <input id="cb-name" type="text" list="dl-beannames" value="${esc(rec?.bean_type || '')}" placeholder="e.g. Ethiopia Yirgacheffe"></div>
     <div class="field"><label>Vendor / Roaster</label>
-      <input id="cb-vendor" type="text" value="${esc(rec?.vendor || '')}" placeholder="e.g. Onyx Coffee Lab"></div>
+      <input id="cb-vendor" type="text" list="dl-vendors" value="${esc(rec?.vendor || '')}" placeholder="e.g. Onyx Coffee Lab"></div>
     <div class="field-row">
       <div class="field"><label>Amount Paid ($)</label>
         <input id="cb-amount" type="number" step="0.01" min="0" inputmode="decimal" value="${rec ? parseFloat(rec.amount_paid).toFixed(2) : ''}"></div>
@@ -332,6 +359,7 @@ function openCogsPackagingModal(id) {
   const rec = id ? _packaging.find(p => p.id === id) : null;
 
   _openCogsModal(rec ? 'Edit Packaging Purchase' : 'New Packaging Purchase', `
+    ${_vendorDatalist()}
     <div class="field"><label>Category</label>
       <select id="cp-cat" class="pay-select">
         <option value="Bottles"${rec?.category==='Bottles'?' selected':''}>Bottles</option>
@@ -341,7 +369,7 @@ function openCogsPackagingModal(id) {
     <div class="field"><label>Description</label>
       <input id="cp-desc" type="text" value="${esc(rec?.description || '')}" placeholder="e.g. Round labels 2.5in"></div>
     <div class="field"><label>Vendor</label>
-      <input id="cp-vendor" type="text" value="${esc(rec?.vendor || '')}" placeholder="e.g. Sticker Mule"></div>
+      <input id="cp-vendor" type="text" list="dl-vendors" value="${esc(rec?.vendor || '')}" placeholder="e.g. Sticker Mule"></div>
     <div class="field-row">
       <div class="field"><label>Quantity</label>
         <input id="cp-qty" type="number" min="1" inputmode="numeric" value="${rec?.quantity || ''}"></div>
@@ -399,10 +427,11 @@ function openCogsEquipmentModal(id) {
   const rec = id ? _equipment.find(e => e.id === id) : null;
 
   _openCogsModal(rec ? 'Edit Equipment' : 'New Equipment Purchase', `
+    ${_vendorDatalist()}
     <div class="field"><label>Item Name</label>
       <input id="ce-name" type="text" value="${esc(rec?.item_name || '')}" placeholder="e.g. Brewing vessel 5gal"></div>
     <div class="field"><label>Vendor</label>
-      <input id="ce-vendor" type="text" value="${esc(rec?.vendor || '')}" placeholder="e.g. Amazon"></div>
+      <input id="ce-vendor" type="text" list="dl-vendors" value="${esc(rec?.vendor || '')}" placeholder="e.g. Amazon"></div>
     <div class="field"><label>Amount Paid ($)</label>
       <input id="ce-amount" type="number" step="0.01" min="0" inputmode="decimal" value="${rec ? parseFloat(rec.amount_paid).toFixed(2) : ''}"></div>
     <div class="field"><label>Date Purchased</label>
@@ -465,6 +494,7 @@ function openCogsBatchModal(id) {
   ).join('');
 
   _openCogsModal(rec ? 'Edit Batch' : 'Log Batch', `
+    ${_vendorDatalist()}${_beanNameDatalist()}
     <div class="field-row">
       <div class="field"><label>Date Brewed</label>
         <input id="bat-date" type="date" value="${rec?.brewed_at || TODAY()}"></div>
@@ -500,14 +530,17 @@ function renderBatchBeanRows() {
   const el = document.getElementById('bat-bean-rows');
   if (!el) return;
   el.innerHTML = _batchBeanRows.map((row, idx) => {
-    const pricePerG = row.name ? latestBeanPrice(row.name) : 0;
+    const { ppg, count } = avgBeanPriceInfo(row.name);
     const hint = row.name
-      ? (pricePerG > 0 ? `$${pricePerG.toFixed(4)}/g` : 'no purchase on file')
+      ? (ppg > 0
+          ? `$${ppg.toFixed(4)}/g avg · ${count} purchase${count !== 1 ? 's' : ''}`
+          : 'no purchase on file')
       : '';
     return `
     <div class="bat-bean-row" id="bat-row-${idx}">
       <div class="bat-bean-inputs">
         <input class="bat-bean-name" type="text" placeholder="Bean name" value="${esc(row.name)}"
+          list="dl-beannames"
           oninput="_batchBeanRows[${idx}].name=this.value; renderBatchBeanRows(); updateBatchCalc()">
         <div class="bat-bean-weight">
           <input class="bat-bean-grams" type="number" step="any" min="0" inputmode="decimal" placeholder="Amount"
