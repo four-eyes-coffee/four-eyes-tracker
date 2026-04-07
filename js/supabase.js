@@ -25,25 +25,27 @@ async function dbLoadSkus() {
     .order('id');
   if (error) throw error;
   return (data || []).map(s => ({
-    id:       s.id,
-    name:     s.name,
-    stock:    s.stock,
-    sold:     s.sold,
-    price:    parseFloat(s.price),
-    sku_type: s.sku_type || 'production'
+    id:          s.id,
+    name:        s.name,
+    stock:       s.stock,
+    sold:        s.sold,
+    price:       parseFloat(s.price),
+    description: s.description || '',
+    sku_type:    s.sku_type || 'production'
   }));
 }
 
 // Upsert a SKU (create or update)
 async function dbSaveSku(sku) {
   const { error } = await _supa.from('skus').upsert({
-    id:       sku.id,
-    name:     sku.name,
-    stock:    sku.stock,
-    sold:     sku.sold,
-    price:    sku.price,
-    sku_type: sku.sku_type || 'production',
-    active:   true
+    id:          sku.id,
+    name:        sku.name,
+    stock:       sku.stock,
+    sold:        sku.sold,
+    price:       sku.price,
+    description: sku.description || '',
+    sku_type:    sku.sku_type || 'production',
+    active:      true
   });
   if (error) throw error;
 }
@@ -230,31 +232,38 @@ async function dbRejectOrder(id) {
 
 // ── Access codes (drop codes) ─────────────────────────────────────
 
-// Fetch the currently active drop code, or null
-async function dbLoadActiveCode() {
+// Fetch all currently active drop codes
+async function dbLoadActiveCodes() {
   const { data, error } = await _supa
     .from('access_codes')
     .select('*')
     .eq('active', true)
-    .maybeSingle();
+    .order('created_at', { ascending: false });
   if (error) throw error;
-  return data; // null if none active
+  return data || [];
 }
 
-// Deactivate any current code, then insert the new one
-async function dbSaveCode(code, expiresAt) {
-  await _supa.from('access_codes').update({ active: false }).eq('active', true);
+// Deactivate existing code of same type, then insert new one
+async function dbSaveCode(code, expiresAt, codeType = 'public') {
+  // Only replace the code of the same type — allows family + public to coexist
+  await _supa.from('access_codes')
+    .update({ active: false })
+    .eq('active', true)
+    .eq('code_type', codeType);
   const { error } = await _supa.from('access_codes').insert({
     code,
     active:     true,
-    expires_at: expiresAt
+    expires_at: expiresAt,
+    code_type:  codeType
   });
   if (error) throw error;
 }
 
-// Deactivate the active code without replacing it
-async function dbDeactivateCode() {
-  const { error } = await _supa.from('access_codes').update({ active: false }).eq('active', true);
+// Deactivate active code(s) — optionally filter by type
+async function dbDeactivateCode(codeType = null) {
+  let q = _supa.from('access_codes').update({ active: false }).eq('active', true);
+  if (codeType) q = q.eq('code_type', codeType);
+  const { error } = await q;
   if (error) throw error;
 }
 

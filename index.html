@@ -12,7 +12,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=11">
+  <link rel="stylesheet" href="css/styles.css?v=12">
 </head>
 <body>
 
@@ -277,30 +277,42 @@
 
   <div class="inner-panel" id="inner-dropcodes">
     <div class="sec-row" style="margin-top:8px;">
-      <span class="sec-label">Weekly Drop Code</span>
+      <span class="sec-label">Drop Codes</span>
     </div>
-    <div class="rev-card">
-      <div class="rev-title">Active Code</div>
+
+    <!-- Family & Friends code -->
+    <div style="font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Family &amp; Friends <span style="color:rgba(255,255,255,0.25);font-weight:500;">· Pickup + Delivery</span></div>
+    <div class="rev-card" style="margin-bottom:6px;">
       <div class="code-row">
-        <div id="active-code-display" class="active-code-text">&#x2014;</div>
-        <button id="copy-code-btn" onclick="copyCode()" class="copy-code-btn" title="Copy code">
-          <svg id="copy-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-               viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round">
-            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
-            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
-          </svg>
-          <svg id="check-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-               viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
-               stroke-linecap="round" stroke-linejoin="round" style="display:none;">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
+        <div id="family-code-display" class="active-code-text">&#x2014;</div>
+        <button onclick="copyCode('family')" class="copy-code-btn" title="Copy family code">
+          <svg id="family-copy-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+          <svg id="family-check-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="20 6 9 17 4 12"/></svg>
         </button>
       </div>
-      <div id="active-code-expiry" class="active-code-expiry">No active code</div>
+      <div id="family-code-expiry" class="active-code-expiry">No active code</div>
     </div>
-    <button class="submit-btn submit-btn--mb" onclick="generateCode()">Generate New Code</button>
-    <button class="reset-btn" onclick="deactivateCode()">Deactivate Current Code</button>
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      <button class="submit-btn" style="flex:1;padding:14px;" onclick="generateCode('family')">Generate</button>
+      <button class="reset-btn" style="flex:1;margin-top:0;padding:14px;" onclick="deactivateCode('family')">Deactivate</button>
+    </div>
+
+    <!-- Public Drop code -->
+    <div style="font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Public Drop <span style="color:rgba(255,255,255,0.25);font-weight:500;">· Pickup Only</span></div>
+    <div class="rev-card" style="margin-bottom:6px;">
+      <div class="code-row">
+        <div id="public-code-display" class="active-code-text">&#x2014;</div>
+        <button onclick="copyCode('public')" class="copy-code-btn" title="Copy public code">
+          <svg id="public-copy-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+          <svg id="public-check-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+      </div>
+      <div id="public-code-expiry" class="active-code-expiry">No active code</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="submit-btn" style="flex:1;padding:14px;" onclick="generateCode('public')">Generate</button>
+      <button class="reset-btn" style="flex:1;margin-top:0;padding:14px;" onclick="deactivateCode('public')">Deactivate</button>
+    </div>
   </div>
 
   <div class="inner-panel" id="inner-fulfillment">
@@ -380,6 +392,10 @@
     <input type="hidden" id="sm-id">
     <input type="hidden" id="sm-type" value="production">
     <div class="field"><label>Flavor Name</label><input type="text" id="sm-name" autocomplete="off"></div>
+    <div class="field">
+      <label>Tasting Notes <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:10px;">(optional · shows on order page)</span></label>
+      <textarea id="sm-desc" rows="2" style="width:100%;padding:12px 14px;background:#000;border:2px solid var(--border);border-radius:3px;font-family:'Rubik',sans-serif;font-size:14px;color:var(--white);outline:none;resize:vertical;transition:border-color 0.15s;" placeholder="e.g. Smooth and chocolatey, low-acid. Our flagship cold brew." onfocus="this.style.borderColor='var(--yellow)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+    </div>
     <div class="field-row">
       <div class="field"><label>Bottles</label><input type="number" id="sm-stock" min="1" inputmode="numeric"></div>
       <div class="field"><label>Price ($)</label><input type="number" id="sm-price" min="0.01" step="0.01" inputmode="decimal"></div>
@@ -465,16 +481,16 @@
 </div>
 
 <!-- ── Scripts ────────────────────────────────────────────────── -->
-<script src="js/supabase.js?v=11"></script>
-<script src="js/app.js?v=11"></script>
-<script src="js/dashboard.js?v=11"></script>
-<script src="js/newSale.js?v=11"></script>
-<script src="js/history/salesLog.js?v=11"></script>
-<script src="js/history/reconcile.js?v=11"></script>
-<script src="js/storeHub/inventory.js?v=11"></script>
-<script src="js/storeHub/cogs.js?v=11"></script>
-<script src="js/storeHub/dropCodes.js?v=11"></script>
-<script src="js/storeHub/fulfillment.js?v=11"></script>
+<script src="js/supabase.js?v=12"></script>
+<script src="js/app.js?v=12"></script>
+<script src="js/dashboard.js?v=12"></script>
+<script src="js/newSale.js?v=12"></script>
+<script src="js/history/salesLog.js?v=12"></script>
+<script src="js/history/reconcile.js?v=12"></script>
+<script src="js/storeHub/inventory.js?v=12"></script>
+<script src="js/storeHub/cogs.js?v=12"></script>
+<script src="js/storeHub/dropCodes.js?v=12"></script>
+<script src="js/storeHub/fulfillment.js?v=12"></script>
 
 <script>
   // All scripts and DOM elements are loaded at this point.

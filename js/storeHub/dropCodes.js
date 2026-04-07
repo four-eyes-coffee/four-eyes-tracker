@@ -1,9 +1,9 @@
 /* ============================================================
    FOUR EYES COFFEE — storeHub/dropCodes.js
-   Weekly drop code generator. Ported from old Drop tab.
+   Drop code generator. Supports family (pickup + delivery)
+   and public (pickup only) codes simultaneously.
    ============================================================ */
 
-// Single source of truth for all themed code words
 const CODE_THEMES = {
   four_eyes:   ['FIRST-BLOOM','DRAGON-PEARL','OFFBEAT-AURA','HAZE-RISE','OBSERVER',
                  'SLOW-DRIP','COLD-SOUL','FOUR-EYES','COFFEE-WITH-SOUL','PATIENCE'],
@@ -17,78 +17,81 @@ const CODE_THEMES = {
 
 // ── Code generation ───────────────────────────────────────────────
 
-function generateCode() {
-  const themes  = Object.keys(CODE_THEMES);
-  const theme   = themes[Math.floor(Math.random() * themes.length)];
-  const words   = CODE_THEMES[theme];
-  const phrase  = words[Math.floor(Math.random() * words.length)];
-  const num     = String(Math.floor(Math.random() * 90) + 10);
-  const parts   = phrase.split('-');
-  const pos     = Math.floor(Math.random() * 3); // 0=before, 1=middle, 2=after
+function _buildCode() {
+  const themes = Object.keys(CODE_THEMES);
+  const theme  = themes[Math.floor(Math.random() * themes.length)];
+  const words  = CODE_THEMES[theme];
+  const phrase = words[Math.floor(Math.random() * words.length)];
+  const num    = String(Math.floor(Math.random() * 90) + 10);
+  const parts  = phrase.split('-');
+  const pos    = Math.floor(Math.random() * 3); // 0=before, 1=middle, 2=after
 
-  let code;
-  if (pos === 0) {
-    code = num + '-' + phrase;
-  } else if (pos === 2) {
-    code = phrase + '-' + num;
-  } else {
-    if (parts.length > 1) {
-      const mid = Math.floor(parts.length / 2);
-      parts.splice(mid, 0, num);
-      code = parts.join('-');
-    } else {
-      code = phrase + '-' + num;
-    }
+  if (pos === 0) return num + '-' + phrase;
+  if (pos === 2) return phrase + '-' + num;
+  if (parts.length > 1) {
+    const mid = Math.floor(parts.length / 2);
+    parts.splice(mid, 0, num);
+    return parts.join('-');
   }
+  return phrase + '-' + num;
+}
 
+function generateCode(codeType) {
+  const code    = _buildCode();
   const expires = new Date();
   expires.setDate(expires.getDate() + 7);
 
-  showActiveCode(code, expires);
-  dbSaveCode(code, expires.toISOString()).catch(e => console.error('Save code failed:', e));
+  _renderCodeCard(codeType, { code, expires_at: expires.toISOString() });
+  dbSaveCode(code, expires.toISOString(), codeType)
+    .catch(e => console.error('Save code failed:', e));
 }
 
-function showActiveCode(code, expires) {
-  const displayEl = document.getElementById('active-code-display');
-  const expiryEl  = document.getElementById('active-code-expiry');
-  if (displayEl) displayEl.textContent = code;
-  if (expiryEl) {
-    const expDate = new Date(expires).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    expiryEl.textContent = 'Expires ' + expDate;
-  }
+// ── Render helpers ────────────────────────────────────────────────
+
+function _fmtExpiry(expiresAt) {
+  if (!expiresAt) return '';
+  return 'Expires ' + new Date(expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-async function loadActiveCode() {
+function _renderCodeCard(codeType, data) {
+  const prefix  = codeType === 'family' ? 'family' : 'public';
+  const display = document.getElementById(prefix + '-code-display');
+  const expiry  = document.getElementById(prefix + '-code-expiry');
+  if (display) display.textContent = data ? data.code : '—';
+  if (expiry)  expiry.textContent  = data ? _fmtExpiry(data.expires_at) : 'No active code';
+}
+
+async function loadActiveCodes() {
   try {
-    const data      = await dbLoadActiveCode();
-    const displayEl = document.getElementById('active-code-display');
-    const expiryEl  = document.getElementById('active-code-expiry');
-    if (data) {
-      showActiveCode(data.code, data.expires_at);
-    } else {
-      if (displayEl) displayEl.textContent = '—';
-      if (expiryEl)  expiryEl.textContent  = 'No active code';
-    }
+    const codes  = await dbLoadActiveCodes();
+    const family = codes.find(c => (c.code_type || 'public') === 'family') || null;
+    const pub    = codes.find(c => (c.code_type || 'public') === 'public') || null;
+    _renderCodeCard('family', family);
+    _renderCodeCard('public', pub);
   } catch(e) {
-    console.error('Load active code failed:', e);
+    console.error('Load active codes failed:', e);
   }
 }
 
-function copyCode() {
-  const code = document.getElementById('active-code-display').textContent;
+// ── Copy ──────────────────────────────────────────────────────────
+
+function copyCode(codeType) {
+  const prefix = codeType === 'family' ? 'family' : 'public';
+  const code   = document.getElementById(prefix + '-code-display')?.textContent;
   if (!code || code === '—') return;
 
   const showCheck = () => {
-    document.getElementById('copy-icon').style.display  = 'none';
-    document.getElementById('check-icon').style.display = 'block';
+    const copyIcon  = document.getElementById(prefix + '-copy-icon');
+    const checkIcon = document.getElementById(prefix + '-check-icon');
+    if (copyIcon)  copyIcon.style.display  = 'none';
+    if (checkIcon) checkIcon.style.display = 'block';
     setTimeout(() => {
-      document.getElementById('copy-icon').style.display  = 'block';
-      document.getElementById('check-icon').style.display = 'none';
+      if (copyIcon)  copyIcon.style.display  = 'block';
+      if (checkIcon) checkIcon.style.display = 'none';
     }, 1500);
   };
 
   navigator.clipboard.writeText(code).then(showCheck).catch(() => {
-    // Fallback for older iOS Safari
     const el = document.createElement('textarea');
     el.value = code;
     document.body.appendChild(el);
@@ -99,15 +102,13 @@ function copyCode() {
   });
 }
 
-async function deactivateCode() {
+// ── Deactivate ────────────────────────────────────────────────────
+
+async function deactivateCode(codeType) {
   try {
-    await dbDeactivateCode();
-    const displayEl = document.getElementById('active-code-display');
-    const expiryEl  = document.getElementById('active-code-expiry');
-    if (displayEl) displayEl.textContent = '—';
-    if (expiryEl)  expiryEl.textContent  = 'No active code';
+    await dbDeactivateCode(codeType);
+    _renderCodeCard(codeType, null);
   } catch(e) {
     console.error('Deactivate code failed:', e);
   }
 }
-

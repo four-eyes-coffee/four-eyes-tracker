@@ -8,7 +8,7 @@ const APP_VERSION = '20260406-phase4'; // auto-updated on each deploy
 // ── Shared state ──────────────────────────────────────────────────
 // Single source of truth. All modules read/write this object.
 const state = {
-  skus:       [],   // [{ id, name, stock, sold, price, sku_type }]
+  skus:       [],   // [{ id, name, stock, sold, price, description, sku_type }]
   orders:     [],   // [{ id, name, items, pay, discount, total, time, createdAt }]
   pendingQty: {},   // { skuId: qty } — aggregated from pending orders
   batches:    [],   // [{ id, sku_id, sku_name, cost_per_bottle, total_cogs, batch_type, ... }]
@@ -95,7 +95,7 @@ function switchTab(name) {
     if (typeof loadPendingForNewSale === 'function') loadPendingForNewSale();
   }
   if (name === 'storehub') {
-    if (typeof loadActiveCode  === 'function') loadActiveCode();
+    if (typeof loadActiveCodes === 'function') loadActiveCodes();
     if (typeof renderInventory === 'function') renderInventory();
   }
   if (name === 'history') {

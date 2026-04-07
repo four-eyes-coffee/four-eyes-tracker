@@ -56,12 +56,13 @@ function _renderSkuGrid(gridId, skus) {
 
 // ── SKU modal ─────────────────────────────────────────────────────
 
-function _populateSkuModal({ title, id = '', name = '', stock = '', price = '', sku_type = 'production', showDelete = false }) {
+function _populateSkuModal({ title, id = '', name = '', stock = '', price = '', description = '', sku_type = 'production', showDelete = false }) {
   document.getElementById('sku-modal-title').textContent = title;
   document.getElementById('sm-id').value                 = id;
   document.getElementById('sm-name').value               = name;
   document.getElementById('sm-stock').value              = stock;
   document.getElementById('sm-price').value              = price;
+  document.getElementById('sm-desc').value               = description;
   document.getElementById('sku-del-btn').style.display   = showDelete ? 'block' : 'none';
 
   // Set type pills
@@ -80,13 +81,14 @@ function openEditSku(id) {
   const sku = state.skus.find(s => s.id === id);
   if (!sku) return;
   _populateSkuModal({
-    title:      'Edit Flavor',
-    id:         sku.id,
-    name:       sku.name,
-    stock:      sku.stock,
-    price:      sku.price,
-    sku_type:   sku.sku_type || 'production',
-    showDelete: true
+    title:       'Edit Flavor',
+    id:          sku.id,
+    name:        sku.name,
+    stock:       sku.stock,
+    price:       sku.price,
+    description: sku.description || '',
+    sku_type:    sku.sku_type || 'production',
+    showDelete:  true
   });
 }
 
@@ -97,11 +99,12 @@ function selectSkuType(type) {
 }
 
 async function saveSku() {
-  const id       = document.getElementById('sm-id').value;
-  const name     = document.getElementById('sm-name').value.trim();
-  const stock    = parseInt(document.getElementById('sm-stock').value);
-  const price    = parseFloat(document.getElementById('sm-price').value);
-  const sku_type = document.getElementById('sm-type').value || 'production';
+  const id          = document.getElementById('sm-id').value;
+  const name        = document.getElementById('sm-name').value.trim();
+  const stock       = parseInt(document.getElementById('sm-stock').value);
+  const price       = parseFloat(document.getElementById('sm-price').value);
+  const description = document.getElementById('sm-desc').value.trim();
+  const sku_type    = document.getElementById('sm-type').value || 'production';
 
   if (!name)              { alert('Enter a flavor name.'); return; }
   if (!stock || stock < 1){ alert('Enter bottle count.');  return; }
@@ -112,13 +115,14 @@ async function saveSku() {
     const sku = state.skus.find(s => s.id === parseInt(id));
     if (!sku) return;
     if (stock < sku.sold) { alert(`Can't set stock below already sold (${sku.sold}).`); return; }
-    sku.name     = name;
-    sku.stock    = stock;
-    sku.price    = price;
-    sku.sku_type = sku_type;
-    savedSku     = sku;
+    sku.name        = name;
+    sku.stock       = stock;
+    sku.price       = price;
+    sku.description = description;
+    sku.sku_type    = sku_type;
+    savedSku        = sku;
   } else {
-    const newSku = { id: state.nextSkuId++, name, stock, sold: 0, price, sku_type };
+    const newSku = { id: state.nextSkuId++, name, stock, sold: 0, price, description, sku_type };
     state.skus.push(newSku);
     savedSku = newSku;
   }
