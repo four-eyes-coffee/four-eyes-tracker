@@ -262,7 +262,7 @@ async function loadPendingForNewSale() {
         : '';
       const dropType  = (o.code_type === 'family') ? 'FAMILY' : 'PUBLIC';
       const dropClass = (o.code_type === 'family') ? 'drop-family' : 'drop-public';
-      return `<div class="pending-card">
+      return `<div class="pending-card ${dropClass}">
         <div class="pending-card-top">
           <div class="pending-name">${esc(o.customer_name || '—')}</div>
           <div class="pending-window">
