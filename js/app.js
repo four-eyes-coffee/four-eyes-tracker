@@ -3,7 +3,7 @@
    Routing · shared state · utilities · PIN · boot sequence
    ============================================================ */
 
-const APP_VERSION = '20260406-phase4'; // auto-updated on each deploy
+const APP_VERSION = '20260407-v18'; // UPDATE THIS on every deploy — drives silent auto-update check
 
 // ── Shared state ──────────────────────────────────────────────────
 // Single source of truth. All modules read/write this object.
@@ -45,6 +45,19 @@ function getSaleMonthKey(order) {
   }
   const n = new Date();
   return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+}
+
+// Current and previous month keys — shared across dashboard + history
+function currentMonthKey() {
+  const n = new Date();
+  return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+}
+
+function prevMonthKey() {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
 }
 
 // Format YYYY-MM key as "March 2026"

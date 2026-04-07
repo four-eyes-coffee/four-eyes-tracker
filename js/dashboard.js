@@ -4,10 +4,8 @@
    ============================================================ */
 
 function renderDashboard() {
-  const now     = new Date();
-  const curKey  = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevKey  = prevDate.getFullYear() + '-' + String(prevDate.getMonth() + 1).padStart(2, '0');
+  const curKey  = currentMonthKey();
+  const prevKey = prevMonthKey();
 
   // ── Single-pass SKU stats ────────────────────────────────────
   // Build per-SKU sold/gifted/revenue from orders in one iteration
@@ -135,46 +133,33 @@ function renderDashboard() {
   renderPnL(skuStats, totalRevenue);
 }
 
-// ── P&L card ──────────────────────────────────────────────────────
+function renderPnL(skuStats, totalRevenue) {
+  const card = document.getElementById('pnl-card');
+  if (!card) return;
 
-function calcPnL(skuStats, totalRevenue) {
-  // Weighted average cost per bottle per SKU across all 'For Sale' batches
-  const skuTotals = {}; // { skuId: { totalCost, totalBottles } }
+  // Weighted average cost per bottle per SKU across all production batches
+  const skuTotals = {};
   (state.batches || [])
     .filter(b => (b.batch_type || 'production') !== 'test' && b.sku_id)
     .forEach(b => {
       if (!skuTotals[b.sku_id]) skuTotals[b.sku_id] = { totalCost: 0, totalBottles: 0 };
-      skuTotals[b.sku_id].totalCost    += parseFloat(b.total_cogs)        || 0;
-      skuTotals[b.sku_id].totalBottles += parseFloat(b.bottles_produced)  || 0;
+      skuTotals[b.sku_id].totalCost    += parseFloat(b.total_cogs)       || 0;
+      skuTotals[b.sku_id].totalBottles += parseFloat(b.bottles_produced) || 0;
     });
 
-  // COGS = units sold per SKU × weighted avg cost/bottle for that SKU
-  let totalCogs    = 0;
-  let hasBatchData = false;
+  let totalCogs = 0, hasBatchData = false;
   state.skus.forEach(sku => {
     const t = skuTotals[sku.id];
     if (!t || t.totalBottles === 0) return;
     hasBatchData = true;
-    const cpb     = t.totalCost / t.totalBottles;
-    const soldQty = skuStats[sku.id]?.soldQty || 0;
-    totalCogs    += soldQty * cpb;
+    totalCogs += (skuStats[sku.id]?.soldQty || 0) * (t.totalCost / t.totalBottles);
   });
 
   const grossProfit = totalRevenue - totalCogs;
   const marginPct   = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : null;
   const totalEquip  = (state.equipment || []).reduce((s, e) => s + (parseFloat(e.amount_paid) || 0), 0);
 
-  return { totalCogs, grossProfit, marginPct, totalEquip, hasBatchData };
-}
-
-function renderPnL(skuStats, totalRevenue) {
-  const card = document.getElementById('pnl-card');
-  if (!card) return;
-
-  const { totalCogs, grossProfit, marginPct, totalEquip, hasBatchData } = calcPnL(skuStats, totalRevenue);
-
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-
   set('pnl-revenue', fmtMoney(totalRevenue));
   set('pnl-cogs',    hasBatchData ? `− ${fmtMoney(totalCogs)}` : '—');
   set('pnl-profit',  hasBatchData ? fmtMoney(grossProfit) : '—');
@@ -188,9 +173,6 @@ function renderPnL(skuStats, totalRevenue) {
     set('pnl-equip', fmtMoney(totalEquip));
   }
 
-  // Colour gross profit — yellow if positive, blue if negative
   const profitEl = document.getElementById('pnl-profit');
-  if (profitEl) {
-    profitEl.style.color = grossProfit >= 0 ? 'var(--yellow)' : 'var(--blue)';
-  }
+  if (profitEl) profitEl.style.color = grossProfit >= 0 ? 'var(--yellow)' : 'var(--blue)';
 }

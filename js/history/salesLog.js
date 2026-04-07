@@ -47,8 +47,7 @@ function renderHistory() {
   const filterEl = document.getElementById('hist-filter');
   if (!list || !filterEl) return;
 
-  const now    = new Date();
-  const curKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const curKey     = currentMonthKey();
 
   const allKeys    = [...new Set(state.orders.map(getSaleMonthKey))].sort().reverse();
   const defaultKey = allKeys.includes(curKey) ? curKey : 'all';
