@@ -8,7 +8,8 @@ let _beans        = [];
 let _packaging    = [];
 let _equipment    = [];
 let _batches      = [];
-let _batchBeanRows = [{ name: '', grams: '', unit: 'g' }];
+let _batchBeanRows = [{ name: '', grams: '', unit: 'g', manual: false }];
+let _batchType    = 'production';
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
@@ -90,27 +91,27 @@ async function initCogs() {
 
 function renderCogsShell() {
   document.getElementById('inner-cogs').innerHTML = `
-    ${cogsSection('beans',     'Bean Purchases',     'openCogsBeanModal()')}
+    ${cogsSection('batches',   'Batch Log',          'openCogsBatchModal()', true,  true)}
+    ${cogsSection('beans',     'Bean Purchases',     'openCogsBeanModal()',  false, false)}
     ${cogsSection('packaging', 'Packaging',          'openCogsPackagingModal()')}
     ${cogsSection('equipment', 'Equipment',          'openCogsEquipmentModal()')}
-    ${cogsSection('batches',   'Batch Log',          'openCogsBatchModal()', true)}
   `;
 }
 
-function cogsSection(id, title, addCall, openByDefault = false) {
+function cogsSection(id, title, addCall, openByDefault = false, isBatch = false) {
   return `
-  <div class="cogs-sec">
-    <div class="cogs-sec-hdr${openByDefault ? '' : ''}" onclick="toggleCogsSec('cogs-body-${id}', this)">
+  <div class="cogs-sec${isBatch ? ' cogs-sec--batch' : ''}">
+    <div class="cogs-sec-hdr" onclick="toggleCogsSec('cogs-body-${id}', this)">
       <div class="cogs-sec-left">
         <span class="cogs-sec-name">${title}</span>
         <span class="cogs-sec-meta" id="cogs-meta-${id}">Loading…</span>
       </div>
       <div class="cogs-sec-right">
-        <button class="sec-action" onclick="event.stopPropagation(); ${addCall}">+ Add</button>
+        <button class="sec-action${isBatch ? ' sec-action--batch' : ''}" onclick="event.stopPropagation(); ${addCall}">+ Add</button>
         <span class="cogs-chevron">&#x25BE;</span>
       </div>
     </div>
-    <div class="cogs-sec-body" id="cogs-body-${id}">
+    <div class="cogs-sec-body" id="cogs-body-${id}"${openByDefault ? '' : ' style="display:none"'}>
       <div class="cogs-loading">Loading…</div>
     </div>
   </div>`;
@@ -225,20 +226,26 @@ function renderBatches() {
   const meta = document.getElementById('cogs-meta-batches');
   if (!body) return;
 
+  const forSale = _batches.filter(b => (b.batch_type || 'production') === 'production').length;
+  const test    = _batches.filter(b => b.batch_type === 'test').length;
   if (meta) {
     meta.textContent = _batches.length
-      ? `${_batches.length} batch${_batches.length !== 1 ? 'es' : ''} · latest ${_batches[0]?.sku_name || '—'}`
+      ? `${forSale} for sale · ${test} test`
       : 'No batches logged';
   }
 
   if (!_batches.length) { body.innerHTML = '<div class="cogs-empty">No batches logged.</div>'; return; }
 
   body.innerHTML = _batches.map(b => {
-    const beans = (b.beans_used || []).map(r => `${esc(r.name)} ${fmtGrams(r.grams)}`).join(', ');
+    const beans    = (b.beans_used || []).map(r => `${esc(r.name)} ${fmtGrams(r.grams)}`).join(', ');
+    const isTest   = b.batch_type === 'test';
     return `
     <div class="cogs-row">
       <div class="cogs-row-main">
-        <div class="cogs-row-title">${esc(b.sku_name)} · ${b.bottles_produced} bottles</div>
+        <div class="cogs-row-title">
+          ${esc(b.sku_name)} · ${b.bottles_produced} bottles
+          ${isTest ? '<span class="batch-type-tag test">Test</span>' : '<span class="batch-type-tag sale">For Sale</span>'}
+        </div>
         <div class="cogs-row-sub">${beans}</div>
       </div>
       <div class="cogs-row-right">
@@ -482,19 +489,18 @@ async function deleteCogsEquipmentPurchase(id) {
 function openCogsBatchModal(id) {
   const rec = id ? _batches.find(b => b.id === id) : null;
   if (rec && rec.beans_used?.length) {
-    _batchBeanRows = rec.beans_used.map(r => ({
-      name: r.name, grams: r.grams, unit: 'g'
-    }));
+    _batchBeanRows = rec.beans_used.map(r => ({ name: r.name, grams: r.grams, unit: 'g', manual: false }));
   } else {
-    _batchBeanRows = [{ name: '', grams: '', unit: 'g' }];
+    _batchBeanRows = [{ name: '', grams: '', unit: 'g', manual: false }];
   }
+  _batchType = rec?.batch_type || 'production';
 
   const skuOptions = (state.skus || []).map(s =>
     `<option value="${s.id}" data-name="${esc(s.name)}"${rec?.sku_id === s.id ? ' selected' : ''}>${esc(s.name)}</option>`
   ).join('');
 
   _openCogsModal(rec ? 'Edit Batch' : 'Log Batch', `
-    ${_vendorDatalist()}${_beanNameDatalist()}
+    ${_beanNameDatalist()}
     <div class="field-row">
       <div class="field"><label>Date Brewed</label>
         <input id="bat-date" type="date" value="${rec?.brewed_at || TODAY()}"></div>
@@ -503,6 +509,14 @@ function openCogsBatchModal(id) {
           <option value="">Select SKU…</option>
           ${skuOptions}
         </select></div>
+    </div>
+    <div class="field"><label>Batch Type</label>
+      <div class="type-pills">
+        <button class="type-pill${_batchType === 'production' ? ' selected' : ''}" id="btp-production"
+          onclick="selectBatchType('production')">For Sale</button>
+        <button class="type-pill${_batchType === 'test' ? ' selected' : ''}" id="btp-test"
+          onclick="selectBatchType('test')">Test</button>
+      </div>
     </div>
     <div class="field"><label>Beans Used</label>
       <div id="bat-bean-rows"></div>
@@ -526,42 +540,80 @@ function openCogsBatchModal(id) {
   updateBatchCalc();
 }
 
+function selectBatchType(type) {
+  _batchType = type;
+  document.getElementById('btp-production')?.classList.toggle('selected', type === 'production');
+  document.getElementById('btp-test')?.classList.toggle('selected', type === 'test');
+}
+
 function renderBatchBeanRows() {
   const el = document.getElementById('bat-bean-rows');
   if (!el) return;
+
+  // Build select options from known bean names
+  const knownBeans = [...new Set(_beans.map(b => b.bean_type))].filter(Boolean).sort();
+
   el.innerHTML = _batchBeanRows.map((row, idx) => {
     const { ppg, count } = avgBeanPriceInfo(row.name);
-    const hint = row.name
+    const hint = row.name && row.name !== '__other__'
       ? (ppg > 0
           ? `$${ppg.toFixed(4)}/g avg · ${count} purchase${count !== 1 ? 's' : ''}`
-          : 'no purchase on file')
+          : 'no purchase on file — add to Bean Purchases first')
       : '';
+
+    const selectOpts = [
+      `<option value="">Select bean…</option>`,
+      ...knownBeans.map(n =>
+        `<option value="${esc(n)}"${row.name === n ? ' selected' : ''}>${esc(n)}</option>`
+      ),
+      `<option value="__other__"${row.name === '__other__' || (row.manual) ? ' selected' : ''}>— Enter manually —</option>`
+    ].join('');
+
+    const isManual = row.manual || (!knownBeans.includes(row.name) && row.name && row.name !== '__other__');
+
     return `
     <div class="bat-bean-row" id="bat-row-${idx}">
-      <div class="bat-bean-inputs">
-        <input class="bat-bean-name" type="text" placeholder="Bean name" value="${esc(row.name)}"
-          list="dl-beannames"
-          oninput="_batchBeanRows[${idx}].name=this.value; renderBatchBeanRows(); updateBatchCalc()">
-        <div class="bat-bean-weight">
-          <input class="bat-bean-grams" type="number" step="any" min="0" inputmode="decimal" placeholder="Amount"
-            value="${row.grams}" oninput="_batchBeanRows[${idx}].grams=this.value; updateBatchCalc()">
-          <select class="cogs-unit-select" onchange="_batchBeanRows[${idx}].unit=this.value; updateBatchCalc()">
-            <option value="g"${row.unit==='g'?' selected':''}>g</option>
-            <option value="kg"${row.unit==='kg'?' selected':''}>kg</option>
-            <option value="lbs"${row.unit==='lbs'?' selected':''}>lbs</option>
-          </select>
-        </div>
+      <div class="bat-bean-line1">
+        <select class="bat-bean-select" onchange="onBeanSelectChange(${idx}, this.value)">
+          ${selectOpts}
+        </select>
         ${_batchBeanRows.length > 1
           ? `<button class="item-remove" onclick="removeBatchBeanRow(${idx})">&#x2715;</button>`
-          : '<span style="width:20px"></span>'}
+          : ''}
+      </div>
+      ${isManual ? `
+      <div class="bat-bean-manual">
+        <input class="bat-bean-name-input" type="text" placeholder="Bean name" value="${esc(isManual && row.name !== '__other__' ? row.name : '')}"
+          oninput="_batchBeanRows[${idx}].name=this.value; updateBatchCalc()">
+      </div>` : ''}
+      <div class="bat-bean-line2">
+        <input class="bat-bean-grams" type="number" step="any" min="0" inputmode="decimal" placeholder="Amount"
+          value="${row.grams || ''}" oninput="_batchBeanRows[${idx}].grams=this.value; updateBatchCalc()">
+        <select class="cogs-unit-select" onchange="_batchBeanRows[${idx}].unit=this.value; updateBatchCalc()">
+          <option value="g"${(row.unit||'g')==='g'?' selected':''}>g</option>
+          <option value="kg"${row.unit==='kg'?' selected':''}>kg</option>
+          <option value="lbs"${row.unit==='lbs'?' selected':''}>lbs</option>
+        </select>
       </div>
       ${hint ? `<div class="bat-bean-hint">${hint}</div>` : ''}
     </div>`;
   }).join('');
 }
 
+function onBeanSelectChange(idx, value) {
+  if (value === '__other__') {
+    _batchBeanRows[idx].name   = '';
+    _batchBeanRows[idx].manual = true;
+  } else {
+    _batchBeanRows[idx].name   = value;
+    _batchBeanRows[idx].manual = false;
+  }
+  renderBatchBeanRows();
+  updateBatchCalc();
+}
+
 function addBatchBeanRow() {
-  _batchBeanRows.push({ name: '', grams: '', unit: 'g' });
+  _batchBeanRows.push({ name: '', grams: '', unit: 'g', manual: false });
   renderBatchBeanRows();
 }
 
@@ -596,19 +648,26 @@ function updateBatchCalc() {
 async function saveCogsBatch(id) {
   const skuEl   = _fld('bat-sku');
   const skuId   = skuEl ? parseInt(skuEl.value) || null : null;
-  const skuName = skuEl ? (skuEl.options[skuEl.selectedIndex]?.dataset?.name || '') : '';
+  const skuName = skuEl ? (skuEl.options[skuEl.selectedIndex]?.dataset?.name || skuEl.options[skuEl.selectedIndex]?.text || '') : '';
   const date    = _val('bat-date');
   const bottles = parseInt(_val('bat-bottles')) || 0;
 
   if (!date || !bottles) { alert('Fill in date and bottles produced.'); return; }
-  if (_batchBeanRows.every(r => !r.name)) { alert('Add at least one bean.'); return; }
+
+  // Resolve bean names — manual entries come from the text input
+  const manualInputs = document.querySelectorAll('.bat-bean-name-input');
+  _batchBeanRows.forEach((row, idx) => {
+    if (row.manual && manualInputs[idx]) row.name = manualInputs[idx].value.trim();
+  });
 
   const beansUsed = _batchBeanRows
-    .filter(r => r.name && (parseFloat(r.grams) || 0) > 0)
-    .map(r => ({ name: r.name.trim(), grams: toGrams(parseFloat(r.grams), r.unit), unit: r.unit }));
+    .filter(r => r.name && r.name !== '__other__' && (parseFloat(r.grams) || 0) > 0)
+    .map(r => ({ name: r.name.trim(), grams: toGrams(parseFloat(r.grams), r.unit || 'g') }));
+
+  if (!beansUsed.length) { alert('Add at least one bean with a name and amount.'); return; }
 
   const beanCost = beansUsed.reduce((s, r) => s + r.grams * latestBeanPrice(r.name), 0);
-  const pkgCost  = bottles * (latestPackagingUnitCost('bottles') + latestPackagingUnitCost('labels'));
+  const pkgCost  = bottles * (latestPackagingUnitCost('Bottles') + latestPackagingUnitCost('Labels'));
   const total    = beanCost + pkgCost;
   const cpb      = total / bottles;
 
@@ -622,6 +681,7 @@ async function saveCogsBatch(id) {
     packaging_cost:   parseFloat(pkgCost.toFixed(4)),
     total_cogs:       parseFloat(total.toFixed(4)),
     cost_per_bottle:  parseFloat(cpb.toFixed(4)),
+    batch_type:       _batchType,
     notes:            _val('bat-notes')
   };
 

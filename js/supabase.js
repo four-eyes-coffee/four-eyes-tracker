@@ -25,23 +25,25 @@ async function dbLoadSkus() {
     .order('id');
   if (error) throw error;
   return (data || []).map(s => ({
-    id:    s.id,
-    name:  s.name,
-    stock: s.stock,
-    sold:  s.sold,
-    price: parseFloat(s.price)
+    id:       s.id,
+    name:     s.name,
+    stock:    s.stock,
+    sold:     s.sold,
+    price:    parseFloat(s.price),
+    sku_type: s.sku_type || 'production'
   }));
 }
 
 // Upsert a SKU (create or update)
 async function dbSaveSku(sku) {
   const { error } = await _supa.from('skus').upsert({
-    id:     sku.id,
-    name:   sku.name,
-    stock:  sku.stock,
-    sold:   sku.sold,
-    price:  sku.price,
-    active: true
+    id:       sku.id,
+    name:     sku.name,
+    stock:    sku.stock,
+    sold:     sku.sold,
+    price:    sku.price,
+    sku_type: sku.sku_type || 'production',
+    active:   true
   });
   if (error) throw error;
 }
@@ -416,6 +418,7 @@ async function dbSaveBatch(b) {
     packaging_cost:   b.packaging_cost,
     total_cogs:       b.total_cogs,
     cost_per_bottle:  b.cost_per_bottle,
+    batch_type:       b.batch_type || 'production',
     notes:            b.notes || null
   }).select().single();
   if (error) throw error;
@@ -433,6 +436,7 @@ async function dbUpdateBatch(b) {
     packaging_cost:   b.packaging_cost,
     total_cogs:       b.total_cogs,
     cost_per_bottle:  b.cost_per_bottle,
+    batch_type:       b.batch_type || 'production',
     notes:            b.notes || null
   }).eq('id', b.id);
   if (error) throw error;
