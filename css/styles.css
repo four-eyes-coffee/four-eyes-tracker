@@ -720,20 +720,20 @@ header {
 .no-pending-msg    { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; padding: 8px 0; }
 
 .pending-card {
-  background: var(--card);
-  border: 1.5px solid var(--border);
-  border-left: 3px solid var(--yellow);
+  background: #ffffff;
+  border: 1.5px solid #e0e0e0;
+  border-right: 3px solid var(--yellow);
   border-radius: 3px;
   padding: 13px 14px;
   margin-bottom: 8px;
 }
-.pending-card.drop-public { border-left-color: var(--blue); }
-.pending-card.drop-family { border-left-color: var(--yellow); }
+.pending-card.drop-public { border-right-color: var(--blue); }
+.pending-card.drop-family { border-right-color: var(--yellow); }
 .pending-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-.pending-name     { font-size: 14px; font-weight: 700; }
-.pending-window   { font-size: 10px; color: var(--yellow); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
-.pending-card.drop-public .pending-window { color: var(--blue); }
-.pending-items    { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+.pending-name     { font-size: 14px; font-weight: 700; color: #111; }
+.pending-window   { font-size: 10px; color: var(--blue); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.pending-card.drop-family .pending-window { color: #888; }
+.pending-items    { font-size: 11px; color: #666; margin-bottom: 10px; }
 .pending-actions  { display: flex; gap: 8px; }
 
 .approve-btn {
