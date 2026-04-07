@@ -313,7 +313,7 @@ async function saveCogsBeanPurchase(id) {
     _beans.sort((a, b) => b.purchased_at.localeCompare(a.purchased_at));
     closeCogsModal();
     renderBeans();
-  } catch(e) { console.error('Save bean purchase failed:', e); alert('Save failed.'); }
+  } catch(e) { console.error('Save bean purchase failed:', e); alert('Save failed: ' + (e?.message || e)); }
 }
 
 async function deleteCogsBeanPurchase(id) {
@@ -323,7 +323,7 @@ async function deleteCogsBeanPurchase(id) {
     _beans = _beans.filter(b => b.id !== id);
     closeCogsModal();
     renderBeans();
-  } catch(e) { console.error('Delete bean purchase failed:', e); alert('Delete failed.'); }
+  } catch(e) { console.error('Delete bean purchase failed:', e); alert('Delete failed: ' + (e?.message || e)); }
 }
 
 // ── Packaging Modal ───────────────────────────────────────────────
@@ -380,7 +380,7 @@ async function saveCogsPackagingPurchase(id) {
     _packaging.sort((a, b) => b.purchased_at.localeCompare(a.purchased_at));
     closeCogsModal();
     renderPackaging();
-  } catch(e) { console.error('Save packaging failed:', e); alert('Save failed.'); }
+  } catch(e) { console.error('Save packaging failed:', e); alert('Save failed: ' + (e?.message || e)); }
 }
 
 async function deleteCogsPackagingPurchase(id) {
@@ -390,7 +390,7 @@ async function deleteCogsPackagingPurchase(id) {
     _packaging = _packaging.filter(p => p.id !== id);
     closeCogsModal();
     renderPackaging();
-  } catch(e) { console.error('Delete packaging failed:', e); alert('Delete failed.'); }
+  } catch(e) { console.error('Delete packaging failed:', e); alert('Delete failed: ' + (e?.message || e)); }
 }
 
 // ── Equipment Modal ───────────────────────────────────────────────
@@ -435,7 +435,7 @@ async function saveCogsEquipmentPurchase(id) {
     _equipment.sort((a, b) => b.purchased_at.localeCompare(a.purchased_at));
     closeCogsModal();
     renderEquipment();
-  } catch(e) { console.error('Save equipment failed:', e); alert('Save failed.'); }
+  } catch(e) { console.error('Save equipment failed:', e); alert('Save failed: ' + (e?.message || e)); }
 }
 
 async function deleteCogsEquipmentPurchase(id) {
@@ -445,7 +445,7 @@ async function deleteCogsEquipmentPurchase(id) {
     _equipment = _equipment.filter(e => e.id !== id);
     closeCogsModal();
     renderEquipment();
-  } catch(e) { console.error('Delete equipment failed:', e); alert('Delete failed.'); }
+  } catch(e) { console.error('Delete equipment failed:', e); alert('Delete failed: ' + (e?.message || e)); }
 }
 
 // ── Batch Modal ───────────────────────────────────────────────────
@@ -604,7 +604,7 @@ async function saveCogsBatch(id) {
     _batches.sort((a, b) => b.brewed_at.localeCompare(a.brewed_at));
     closeCogsModal();
     renderBatches();
-  } catch(e) { console.error('Save batch failed:', e); alert('Save failed.'); }
+  } catch(e) { console.error('Save batch failed:', e); alert('Save failed: ' + (e?.message || e)); }
 }
 
 async function deleteCogsBatch(id) {
@@ -614,5 +614,5 @@ async function deleteCogsBatch(id) {
     _batches = _batches.filter(b => b.id !== id);
     closeCogsModal();
     renderBatches();
-  } catch(e) { console.error('Delete batch failed:', e); alert('Delete failed.'); }
+  } catch(e) { console.error('Delete batch failed:', e); alert('Delete failed: ' + (e?.message || e)); }
 }
