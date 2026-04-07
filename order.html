@@ -645,6 +645,7 @@
 
       const orderRow = {
         customer_id: customerId, customer_name: order.name,
+        customer_email: order.email || null,
         status: 'pending',
         fulfillment_type: order.fulfillment,
         fulfillment_window: order.window,
