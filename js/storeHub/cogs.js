@@ -242,12 +242,15 @@ function renderBatches() {
   body.innerHTML = _batches.map(b => {
     const beans  = (b.beans_used || []).map(r => `${esc(r.name)} ${fmtGrams(r.grams)}`).join(', ');
     const isTest = b.batch_type === 'test';
+    const tag    = isTest
+      ? '<span class="batch-type-tag test">Test</span>'
+      : '<span class="batch-type-tag sale">For Sale</span>';
     return `
     <div class="cogs-batch-row">
       <div class="cogs-row-main">
-        <div class="cogs-row-title">
-          ${esc(b.sku_name)} · ${b.bottles_produced} bottles
-          ${isTest ? '<span class="batch-type-tag test">Test</span>' : '<span class="batch-type-tag sale">For Sale</span>'}
+        <div class="cogs-batch-hdr">
+          <span class="cogs-row-title">${esc(b.sku_name)} · ${b.bottles_produced} bottles</span>
+          ${tag}
         </div>
         <div class="cogs-row-sub">${beans}</div>
       </div>
@@ -282,6 +285,13 @@ function _openCogsModal(title, bodyHtml) {
 function closeCogsModal() {
   const el = document.getElementById('cogs-modal-overlay');
   if (el) el.remove();
+}
+
+function _setSavingState(saving) {
+  const btn = document.querySelector('#cogs-modal-inner .modal-save');
+  if (!btn) return;
+  btn.disabled = saving;
+  btn.classList.toggle('saving', saving);
 }
 
 function _fld(id) { return document.getElementById(id); }
@@ -338,6 +348,7 @@ async function saveCogsBeanPurchase(id) {
   const rec = { purchased_at: date, bean_type: name, vendor, amount_paid: amount, weight_g, price_per_g, notes: _val('cb-notes') };
 
   try {
+    _setSavingState(true);
     if (id) {
       await dbUpdateBeanPurchase({ id, ...rec });
       const idx = _beans.findIndex(b => b.id === id);
@@ -346,11 +357,10 @@ async function saveCogsBeanPurchase(id) {
       const saved = await dbSaveBeanPurchase(rec);
       _beans.unshift(saved);
     }
-    // Re-sort by date desc
     _beans.sort((a, b) => b.purchased_at.localeCompare(a.purchased_at));
     closeCogsModal();
     renderBeans();
-  } catch(e) { console.error('Save bean purchase failed:', e); alert('Save failed: ' + (e?.message || e)); }
+  } catch(e) { _setSavingState(false); console.error('Save bean purchase failed:', e); alert('Save failed: ' + (e?.message || e)); }
 }
 
 async function deleteCogsBeanPurchase(id) {
@@ -407,6 +417,7 @@ async function saveCogsPackagingPurchase(id) {
   const rec = { purchased_at: date, category, description: desc, vendor, quantity: qty, amount_paid: amount, unit_cost: amount / qty, notes: _val('cp-notes') };
 
   try {
+    _setSavingState(true);
     if (id) {
       await dbUpdatePackagingPurchase({ id, ...rec });
       const idx = _packaging.findIndex(p => p.id === id);
@@ -418,7 +429,7 @@ async function saveCogsPackagingPurchase(id) {
     _packaging.sort((a, b) => b.purchased_at.localeCompare(a.purchased_at));
     closeCogsModal();
     renderPackaging();
-  } catch(e) { console.error('Save packaging failed:', e); alert('Save failed: ' + (e?.message || e)); }
+  } catch(e) { _setSavingState(false); console.error('Save packaging failed:', e); alert('Save failed: ' + (e?.message || e)); }
 }
 
 async function deleteCogsPackagingPurchase(id) {
@@ -463,6 +474,7 @@ async function saveCogsEquipmentPurchase(id) {
   const rec = { purchased_at: date, item_name: name, vendor, amount_paid: amount, notes: _val('ce-notes') };
 
   try {
+    _setSavingState(true);
     if (id) {
       await dbUpdateEquipmentPurchase({ id, ...rec });
       const idx = _equipment.findIndex(e => e.id === id);
@@ -474,7 +486,7 @@ async function saveCogsEquipmentPurchase(id) {
     _equipment.sort((a, b) => b.purchased_at.localeCompare(a.purchased_at));
     closeCogsModal();
     renderEquipment();
-  } catch(e) { console.error('Save equipment failed:', e); alert('Save failed: ' + (e?.message || e)); }
+  } catch(e) { _setSavingState(false); console.error('Save equipment failed:', e); alert('Save failed: ' + (e?.message || e)); }
 }
 
 async function deleteCogsEquipmentPurchase(id) {
@@ -689,6 +701,7 @@ async function saveCogsBatch(id) {
   };
 
   try {
+    _setSavingState(true);
     if (id) {
       await dbUpdateBatch({ id, ...rec });
       const idx = _batches.findIndex(b => b.id === id);
@@ -700,7 +713,7 @@ async function saveCogsBatch(id) {
     _batches.sort((a, b) => b.brewed_at.localeCompare(a.brewed_at));
     closeCogsModal();
     renderBatches();
-  } catch(e) { console.error('Save batch failed:', e); alert('Save failed: ' + (e?.message || e)); }
+  } catch(e) { _setSavingState(false); console.error('Save batch failed:', e); alert('Save failed: ' + (e?.message || e)); }
 }
 
 async function deleteCogsBatch(id) {
