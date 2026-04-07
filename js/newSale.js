@@ -122,12 +122,14 @@ function updateOrderTotal() {
 // ── Email confirmation ────────────────────────────────────────────
 
 async function sendConfirmationEmail(sale, customerEmail, fulfillmentType, fulfillmentWindow) {
-  if (!customerEmail) return; // skip silently if no email provided
+  if (!customerEmail) return { status: 'skipped' };
 
   const orderNumber = `FE-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${String(sale.id).slice(-4)}`;
 
+  showEmailToast('pending');
+
   try {
-    await fetch(`${SUPA_URL}/functions/v1/send-confirmation`, {
+    const res = await fetch(`${SUPA_URL}/functions/v1/send-confirmation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -147,9 +149,48 @@ async function sendConfirmationEmail(sale, customerEmail, fulfillmentType, fulfi
         fulfillment_window:  fulfillmentWindow || "TBC — we'll be in touch"
       })
     });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('✉ Email function error:', res.status, errText);
+      showEmailToast('error', res.status);
+      return { status: 'error', code: res.status, body: errText };
+    }
+
     console.log('✉ Confirmation email sent to', customerEmail);
+    showEmailToast('sent', null, customerEmail);
+    return { status: 'sent' };
+
   } catch(e) {
-    console.error('Email send failed (non-blocking):', e);
+    console.error('✉ Email send failed (network):', e);
+    showEmailToast('error', 'network');
+    return { status: 'error', error: e.message };
+  }
+}
+
+function showEmailToast(status, code, email) {
+  let toast = document.getElementById('email-toast');
+  if (!toast) return;
+
+  const map = {
+    pending: { icon: '⏳', text: 'Sending confirmation…', cls: 'toast-pending' },
+    sent:    { icon: '✉',  text: `Confirmation sent${email ? ' to ' + email : ''}`, cls: 'toast-sent' },
+    error:   { icon: '⚠',  text: `Email failed${code ? ' (' + code + ')' : ''} — sale saved`, cls: 'toast-error' },
+    skipped: { icon: '',   text: '', cls: '' }
+  };
+
+  const { icon, text, cls } = map[status] || map.skipped;
+  if (!text) { toast.className = 'email-toast'; toast.style.display = 'none'; return; }
+
+  toast.className = `email-toast ${cls} show`;
+  toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${text}</span>`;
+  toast.style.display = 'flex';
+
+  if (status !== 'pending') {
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => { toast.style.display = 'none'; }, 400);
+    }, 4000);
   }
 }
 
