@@ -128,7 +128,7 @@ function setSuccessEmailStatus(email) {
   if (!el) return;
   if (email) {
     el.className = 'success-email-status status-queued';
-    el.innerHTML = `✉ Confirmation queued → ${email}`;
+    el.innerHTML = `✉ &nbsp;EMAIL · QUEUED`;
     el.style.display = 'flex';
   } else {
     el.style.display = 'none';
@@ -137,9 +137,9 @@ function setSuccessEmailStatus(email) {
 
 function emailStatusTag(email) {
   if (email) {
-    return `<span class="status-tag queued">✉ ${email} · Queued</span>`;
+    return `<span class="status-tag queued">✉ &nbsp;EMAIL · QUEUED</span>`;
   }
-  return `<span class="status-tag no-email">✉ No email on file</span>`;
+  return '';
 }
 
 // ── Sale submission ───────────────────────────────────────────────
