@@ -93,7 +93,7 @@ async function dbLoadOrders() {
 
 // Write a walk-up sale as a completed order
 async function dbSaveOrder(sale) {
-  // Upsert customer by name (walk-up sales don't have email)
+  // Upsert customer by name — email captured separately in orders.customer_email
   let customerId = null;
   const { data: existing } = await _supa
     .from('customers')

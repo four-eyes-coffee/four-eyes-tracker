@@ -2,6 +2,8 @@
    FOUR EYES COFFEE — newSale.js
    Walk-up sale flow: cart, payment, bottle returns, submit.
    Also handles pending order approval from order.html.
+   Email confirmations are handled by the Supabase DB trigger —
+   JS only shows toast feedback after the sale is saved.
    ============================================================ */
 
 let cart              = [];
@@ -27,17 +29,17 @@ function renderFlavorPicker() {
   picker.innerHTML = state.skus
     .filter(s => (s.sku_type || 'production') === 'production')
     .map(sku => {
-    const rem     = sku.stock - sku.sold;
-    const isAdded = addedIds.includes(sku.id);
-    const isOut   = rem === 0;
-    const dis     = (isOut || isAdded) ? ' disabled' : '';
-    const cls     = isAdded ? ' added' : '';
-    const sub     = isAdded ? 'added' : isOut ? 'sold out' : `${rem} left · $${sku.price}`;
-    return `<button class="flavor-btn${cls}"${dis} onclick="addToCart(${sku.id})">
-      <span class="fn">${esc(sku.name)}</span>
-      <span class="fs">${sub}</span>
-    </button>`;
-  }).join('');
+      const rem     = sku.stock - sku.sold;
+      const isAdded = addedIds.includes(sku.id);
+      const isOut   = rem === 0;
+      const dis     = (isOut || isAdded) ? ' disabled' : '';
+      const cls     = isAdded ? ' added' : '';
+      const sub     = isAdded ? 'added' : isOut ? 'sold out' : `${rem} left · $${sku.price}`;
+      return `<button class="flavor-btn${cls}"${dis} onclick="addToCart(${sku.id})">
+        <span class="fn">${esc(sku.name)}</span>
+        <span class="fs">${sub}</span>
+      </button>`;
+    }).join('');
 }
 
 function renderCartItems() {
@@ -119,79 +121,18 @@ function updateOrderTotal() {
   el.textContent = fmtMoney(Math.max(0, subtotal - formReturns * 3));
 }
 
-// ── Email confirmation ────────────────────────────────────────────
+// ── Email toast (DB trigger handles actual send) ──────────────────
 
-async function sendConfirmationEmail(sale, customerEmail, fulfillmentType, fulfillmentWindow) {
-  if (!customerEmail) return { status: 'skipped' };
-
-  const orderNumber = `FE-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${String(sale.id).slice(-4)}`;
-
-  showEmailToast('pending');
-
-  try {
-    const res = await fetch(`${SUPA_URL}/functions/v1/send-confirmation`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SUPA_KEY}`
-      },
-      body: JSON.stringify({
-        customer_email:      customerEmail,
-        customer_first_name: sale.name.split(' ')[0],
-        order_number:        orderNumber,
-        items:               sale.items.map(i => ({
-          name:  i.skuName,
-          qty:   i.qty,
-          price: `$${(i.price * i.qty).toFixed(2)}`
-        })),
-        order_total:         `$${sale.total.toFixed(2)}`,
-        fulfillment_type:    fulfillmentType  || 'Pickup window',
-        fulfillment_window:  fulfillmentWindow || "TBC — we'll be in touch"
-      })
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('✉ Email function error:', res.status, errText);
-      showEmailToast('error', res.status);
-      return { status: 'error', code: res.status, body: errText };
-    }
-
-    console.log('✉ Confirmation email sent to', customerEmail);
-    showEmailToast('sent', null, customerEmail);
-    return { status: 'sent' };
-
-  } catch(e) {
-    console.error('✉ Email send failed (network):', e);
-    showEmailToast('error', 'network');
-    return { status: 'error', error: e.message };
-  }
-}
-
-function showEmailToast(status, code, email) {
-  let toast = document.getElementById('email-toast');
-  if (!toast) return;
-
-  const map = {
-    pending: { icon: '⏳', text: 'Sending confirmation…', cls: 'toast-pending' },
-    sent:    { icon: '✉',  text: `Confirmation sent${email ? ' to ' + email : ''}`, cls: 'toast-sent' },
-    error:   { icon: '⚠',  text: `Email failed${code ? ' (' + code + ')' : ''} — sale saved`, cls: 'toast-error' },
-    skipped: { icon: '',   text: '', cls: '' }
-  };
-
-  const { icon, text, cls } = map[status] || map.skipped;
-  if (!text) { toast.className = 'email-toast'; toast.style.display = 'none'; return; }
-
-  toast.className = `email-toast ${cls} show`;
-  toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${text}</span>`;
+function showEmailToast(email) {
+  const toast = document.getElementById('email-toast');
+  if (!toast || !email) return;
+  toast.className = 'email-toast toast-sent show';
+  toast.innerHTML = `<span class="toast-icon">✉</span><span>Confirmation sent to ${email}</span>`;
   toast.style.display = 'flex';
-
-  if (status !== 'pending') {
-    setTimeout(() => {
-      toast.classList.remove('show');
-      setTimeout(() => { toast.style.display = 'none'; }, 400);
-    }, 4000);
-  }
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => { toast.style.display = 'none'; }, 400);
+  }, 4000);
 }
 
 // ── Sale submission ───────────────────────────────────────────────
@@ -210,7 +151,7 @@ async function logSale() {
   }, 0);
   const total = formPay === 'Gift' ? 0 : Math.max(0, subtotal - disc);
 
-  // Deduct sold counts optimistically and persist to Supabase
+  // Deduct sold counts optimistically
   cart.forEach(item => {
     const sku = state.skus.find(s => s.id === item.skuId);
     if (sku) {
@@ -238,10 +179,11 @@ async function logSale() {
   state.orders.unshift(sale);
   saveLocal();
 
+  // DB trigger fires on insert → sends confirmation email automatically
   dbSaveOrder(sale).catch(e => console.error('Save order failed:', e));
 
-  // Send confirmation email — non-blocking, won't affect sale flow if it fails
-  sendConfirmationEmail(sale, email, null, null);
+  // Toast feedback — DB handles the actual send
+  showEmailToast(email);
 
   renderDashboard();
   if (typeof renderHistory === 'function') renderHistory();
@@ -256,9 +198,9 @@ async function logSale() {
 
 function logAnother() {
   cart = []; formPay = null; formReturns = 0;
-  document.getElementById('f-name').value           = '';
-  document.getElementById('f-email').value          = '';
-  document.getElementById('f-returns').textContent  = '0';
+  document.getElementById('f-name').value          = '';
+  document.getElementById('f-email').value         = '';
+  document.getElementById('f-returns').textContent = '0';
   document.querySelectorAll('.pay-pill').forEach(p => p.classList.remove('selected'));
   document.getElementById('sale-form-wrap').style.display = 'block';
   document.getElementById('sale-success').classList.remove('show');
@@ -273,7 +215,7 @@ async function loadPendingForNewSale() {
   if (!list) return;
 
   try {
-    _pendingOrders = await dbLoadPending(); // populate cache
+    _pendingOrders = await dbLoadPending();
     if (countEl) countEl.textContent = _pendingOrders.length;
 
     if (!_pendingOrders.length) {
@@ -303,13 +245,11 @@ async function loadPendingForNewSale() {
   }
 }
 
-// Uses cache to avoid second DB round-trip
 function approveOrder(id) {
   const order = _pendingOrders.find(o => o.id === id);
   if (order) {
     openPendingModal(order);
   } else {
-    // Fallback: fresh fetch on cache miss (shouldn't happen in normal flow)
     dbLoadPending().then(pending => {
       const o = pending.find(p => p.id === id);
       if (o) openPendingModal(o);
@@ -332,7 +272,7 @@ async function rejectPendingOrder(id) {
 
 function openPendingModal(order) {
   pendingModalOrder   = order;
-  pendingModalItems   = (order.order_items || []).map(i => ({ ...i })); // mutable copy
+  pendingModalItems   = (order.order_items || []).map(i => ({ ...i }));
   pendingModalReturns = 0;
 
   document.getElementById('pm-id').value            = order.id;
@@ -374,7 +314,6 @@ function renderPendingModalFlavors() {
   const picker = document.getElementById('pm-flavor-picker');
   if (!wrap || !picker) return;
 
-  // Show only production SKUs not already in the order
   const inOrderIds = new Set(pendingModalItems.map(i => i.sku_id));
   const available  = state.skus.filter(s =>
     (s.sku_type || 'production') === 'production' && !inOrderIds.has(s.id)
@@ -419,9 +358,8 @@ function changePendingItemQty(skuId, delta) {
 
 function removePendingItem(skuId) {
   pendingModalItems = pendingModalItems.filter(i => i.sku_id !== skuId);
-  const row = document.getElementById(`pmi-${skuId}`);
-  if (row) row.remove();
-  renderPendingModalFlavors(); // removed item reappears as addable
+  document.getElementById(`pmi-${skuId}`)?.remove();
+  renderPendingModalFlavors();
   updatePendingTotal();
 }
 
@@ -436,10 +374,8 @@ function changePendingReturns(delta) {
 
 function updatePendingTotal() {
   const subtotal = pendingModalItems.reduce((s, i) => s + parseFloat(i.price) * i.qty, 0);
-  const discount = pendingModalReturns * 3;
-  const total    = Math.max(0, subtotal - discount);
   const el = document.getElementById('pm-total');
-  if (el) el.textContent = fmtMoney(total);
+  if (el) el.textContent = fmtMoney(Math.max(0, subtotal - pendingModalReturns * 3));
 }
 
 function closePendingModal() {
@@ -461,7 +397,7 @@ async function confirmPendingOrder() {
   const subtotal = activeItems.reduce((s, i) => s + parseFloat(i.price) * i.qty, 0);
   const total    = Math.max(0, subtotal - discount);
 
-  // Deduct inventory optimistically for active items only
+  // Deduct inventory optimistically
   activeItems.forEach(item => {
     const sku = state.skus.find(s => s.id === item.sku_id);
     if (sku) {
@@ -470,30 +406,24 @@ async function confirmPendingOrder() {
     }
   });
 
-  const sale = {
+  state.orders.unshift({
     id:        o.id,
     name:      o.customer_name || '—',
     items:     activeItems.map(i => ({
-      skuId:   i.sku_id,
-      skuName: i.sku_name,
-      qty:     i.qty,
-      price:   parseFloat(i.price)
+      skuId: i.sku_id, skuName: i.sku_name, qty: i.qty, price: parseFloat(i.price)
     })),
-    pay,
-    discount,
-    total,
+    pay, discount, total,
     time:      new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
     createdAt: new Date().toISOString()
-  };
-  state.orders.unshift(sale);
+  });
   saveLocal();
 
-  // Persist: status, pay, total, discount + qty edits + removed items
+  // DB trigger fires on status UPDATE → 'completed' and sends confirmation email
   dbConfirmPendingOrder(o.id, pay, pendingModalItems, total, discount)
     .catch(e => console.error('Confirm pending failed:', e));
 
-  // Send confirmation email using email captured from order.html pre-order
-  sendConfirmationEmail(sale, o.customer_email || null, o.fulfillment_type, o.fulfillment_window);
+  // Toast if customer email exists on the order
+  if (o.customer_email) showEmailToast(o.customer_email);
 
   closePendingModal();
   loadPendingForNewSale();
