@@ -1054,9 +1054,9 @@ header {
   gap: 10px;
 }
 .cogs-batch-row .cogs-row-main  { flex: 1; min-width: 0; }
-.cogs-batch-hdr { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; min-width: 0; }
-.cogs-batch-hdr .cogs-row-title { flex: 1; min-width: 0; color: var(--black); font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cogs-batch-row .cogs-row-sub   { color: rgba(0,0,0,0.45); font-size: 10px; margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cogs-batch-row .cogs-row-title { color: var(--black); font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cogs-batch-row .cogs-row-sub   { color: rgba(0,0,0,0.45); font-size: 10px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cogs-batch-tag-row             { margin-top: 5px; }
 .cogs-batch-row .cogs-row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
 .cogs-batch-row .cogs-row-amount { color: var(--blue); font-size: 15px; font-weight: 900; line-height: 1; }
 .cogs-batch-row .cogs-unit      { color: rgba(0,0,0,0.35); font-size: 9px; font-weight: 700; margin-left: 1px; }

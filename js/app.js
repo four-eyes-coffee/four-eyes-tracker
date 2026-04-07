@@ -3,7 +3,7 @@
    Routing · shared state · utilities · PIN · boot sequence
    ============================================================ */
 
-const APP_VERSION = '20260331-phase3'; // auto-updated on each deploy
+const APP_VERSION = '20260406-phase4'; // auto-updated on each deploy
 
 // ── Shared state ──────────────────────────────────────────────────
 // Single source of truth. All modules read/write this object.
@@ -292,14 +292,17 @@ async function appLoadData() {
   if (typeof loadPendingForNewSale === 'function') loadPendingForNewSale();
 }
 
-// ── Silent background update check (3s after load) ───────────────
+// ── Silent background update check (3s after load, then every 5 min) ───
 
-setTimeout(async () => {
+async function _silentUpdateCheck() {
   try {
     const live = await fetchLiveVersion();
     if (live && live !== APP_VERSION) showUpdateBanner();
   } catch(e) { /* silent */ }
-}, 3000);
+}
+
+setTimeout(_silentUpdateCheck, 3000);
+setInterval(_silentUpdateCheck, 5 * 60 * 1000);
 
 // ── Boot sequence ─────────────────────────────────────────────────
 

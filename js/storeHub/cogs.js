@@ -248,11 +248,9 @@ function renderBatches() {
     return `
     <div class="cogs-batch-row">
       <div class="cogs-row-main">
-        <div class="cogs-batch-hdr">
-          <span class="cogs-row-title">${esc(b.sku_name)} · ${b.bottles_produced} bottles</span>
-          ${tag}
-        </div>
+        <div class="cogs-row-title">${esc(b.sku_name)} · ${b.bottles_produced} bottles</div>
         <div class="cogs-row-sub">${beans}</div>
+        <div class="cogs-batch-tag-row">${tag}</div>
       </div>
       <div class="cogs-row-right">
         <div class="cogs-row-amount">$${parseFloat(b.cost_per_bottle).toFixed(2)}<span class="cogs-unit">/bottle</span></div>
