@@ -195,13 +195,29 @@ async function dbLoadPendingCounts() {
   return counts;
 }
 
-// Approve a pending order — mark completed with chosen payment method
-async function dbConfirmPendingOrder(id, payMethod) {
+// Approve a pending order — mark completed, persist any qty edits / removals / discount
+// items: original order_items array (with edited qty values; qty=0 means removed)
+async function dbConfirmPendingOrder(id, payMethod, items = [], total = 0, discount = 0) {
   const { error } = await _supa.from('orders').update({
     status:     'completed',
-    pay_method: payMethod
+    pay_method: payMethod,
+    total,
+    discount
   }).eq('id', id);
   if (error) throw error;
+
+  const active  = items.filter(i => i.qty > 0);
+  const removed = items.filter(i => i.qty === 0);
+
+  // Update qtys and delete removed items in parallel
+  await Promise.all([
+    ...active.map(i =>
+      _supa.from('order_items').update({ qty: i.qty }).eq('order_id', id).eq('sku_id', i.sku_id)
+    ),
+    ...removed.map(i =>
+      _supa.from('order_items').delete().eq('order_id', id).eq('sku_id', i.sku_id)
+    )
+  ]);
 }
 
 // Decline / reject a pending order

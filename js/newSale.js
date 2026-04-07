@@ -8,6 +8,9 @@ let cart              = [];
 let formPay           = null;
 let formReturns       = 0;
 let pendingModalOrder = null;
+let pendingModalItems = []; // mutable copy of order_items for editing
+let pendingModalReturns = 0;
+let _pendingOrders    = []; // cache — avoids re-fetch on "View & Approve"
 
 // ── Flavor picker + cart rendering ───────────────────────────────
 
@@ -70,7 +73,7 @@ function addToCart(skuId) {
 function changeQty(skuId, delta) {
   const item = cart.find(c => c.skuId === skuId);
   if (!item) return;
-  const sku    = state.skus.find(s => s.id === skuId);
+  const sku      = state.skus.find(s => s.id === skuId);
   const maxAvail = sku ? (sku.stock - sku.sold) : 99;
   const newQty   = item.qty + delta;
   if (newQty < 1)        { removeFromCart(skuId); return; }
@@ -187,16 +190,16 @@ async function loadPendingForNewSale() {
   if (!list) return;
 
   try {
-    const pending = await dbLoadPending();
-    if (countEl) countEl.textContent = pending.length;
+    _pendingOrders = await dbLoadPending(); // populate cache
+    if (countEl) countEl.textContent = _pendingOrders.length;
 
-    if (!pending.length) {
+    if (!_pendingOrders.length) {
       list.innerHTML = '<div class="no-pending-msg">No pending orders</div>';
       return;
     }
 
-    list.innerHTML = pending.map(o => {
-      const lines = (o.order_items || []).map(i => `${esc(i.sku_name)} ×${i.qty}`).join(', ');
+    list.innerHTML = _pendingOrders.map(o => {
+      const lines       = (o.order_items || []).map(i => `${esc(i.sku_name)} ×${i.qty}`).join(', ');
       const windowLabel = o.fulfillment_type
         ? esc(o.fulfillment_type) + (o.fulfillment_window ? ' · ' + esc(o.fulfillment_window) : '')
         : '';
@@ -217,13 +220,17 @@ async function loadPendingForNewSale() {
   }
 }
 
-async function approveOrder(id) {
-  try {
-    const pending = await dbLoadPending();
-    const order   = pending.find(o => o.id === id);
-    if (order) openPendingModal(order);
-  } catch(e) {
-    console.error('Approve order failed:', e);
+// Uses cache to avoid second DB round-trip
+function approveOrder(id) {
+  const order = _pendingOrders.find(o => o.id === id);
+  if (order) {
+    openPendingModal(order);
+  } else {
+    // Fallback: fresh fetch on cache miss (shouldn't happen in normal flow)
+    dbLoadPending().then(pending => {
+      const o = pending.find(p => p.id === id);
+      if (o) openPendingModal(o);
+    }).catch(e => console.error('Approve order failed:', e));
   }
 }
 
@@ -241,7 +248,10 @@ async function rejectPendingOrder(id) {
 // ── Pending modal ─────────────────────────────────────────────────
 
 function openPendingModal(order) {
-  pendingModalOrder = order;
+  pendingModalOrder   = order;
+  pendingModalItems   = (order.order_items || []).map(i => ({ ...i })); // mutable copy
+  pendingModalReturns = 0;
+
   document.getElementById('pm-id').value            = order.id;
   document.getElementById('pm-name').textContent    = order.customer_name || '—';
   document.getElementById('pm-contact').textContent =
@@ -249,34 +259,90 @@ function openPendingModal(order) {
     (order.fulfillment_window ? ' · ' + order.fulfillment_window : '');
   document.getElementById('pm-pay').value   = '';
   document.getElementById('pm-notes').value = order.notes || '';
-  document.getElementById('pm-total').textContent = fmtMoney(parseFloat(order.total) || 0);
+  document.getElementById('pm-returns').textContent = '0';
 
-  const items = order.order_items || [];
-  document.getElementById('pm-items').innerHTML =
-    '<div class="modal-items-label">Items</div>' +
-    items.map(i => `
-      <div class="pending-modal-item">
-        <span class="pk">${esc(i.sku_name)}</span>
-        <span class="pv">×${i.qty} — $${i.price * i.qty}</span>
-      </div>`
-    ).join('');
+  renderPendingModalItems();
+  updatePendingTotal();
 
   document.getElementById('pending-modal').classList.add('open');
 }
 
+function renderPendingModalItems() {
+  const el = document.getElementById('pm-items');
+  if (!el) return;
+  el.innerHTML = '<div class="modal-items-label">Items</div>' +
+    pendingModalItems.map(i =>
+      `<div class="pending-modal-item" id="pmi-${i.sku_id}">
+        <span class="pk">${esc(i.sku_name)}</span>
+        <div class="pmi-controls">
+          <button class="ibtn" onclick="changePendingItemQty(${i.sku_id}, -1)">&#x2212;</button>
+          <span class="item-qty" id="pmi-qty-${i.sku_id}">${i.qty}</span>
+          <button class="ibtn" onclick="changePendingItemQty(${i.sku_id}, 1)">+</button>
+          <span class="pv" id="pmi-price-${i.sku_id}">$${parseFloat(i.price) * i.qty}</span>
+          <button class="item-remove" onclick="removePendingItem(${i.sku_id})">&#x2715;</button>
+        </div>
+      </div>`
+    ).join('');
+}
+
+function changePendingItemQty(skuId, delta) {
+  const item = pendingModalItems.find(i => i.sku_id === skuId);
+  if (!item) return;
+  const newQty = item.qty + delta;
+  if (newQty < 1) { removePendingItem(skuId); return; }
+  item.qty = newQty;
+  const qtyEl   = document.getElementById(`pmi-qty-${skuId}`);
+  const priceEl = document.getElementById(`pmi-price-${skuId}`);
+  if (qtyEl)   qtyEl.textContent   = newQty;
+  if (priceEl) priceEl.textContent = `$${parseFloat(item.price) * newQty}`;
+  updatePendingTotal();
+}
+
+function removePendingItem(skuId) {
+  pendingModalItems = pendingModalItems.filter(i => i.sku_id !== skuId);
+  const row = document.getElementById(`pmi-${skuId}`);
+  if (row) row.remove();
+  updatePendingTotal();
+}
+
+function changePendingReturns(delta) {
+  const newVal = pendingModalReturns + delta;
+  if (newVal < 0) return;
+  pendingModalReturns = newVal;
+  const el = document.getElementById('pm-returns');
+  if (el) el.textContent = newVal;
+  updatePendingTotal();
+}
+
+function updatePendingTotal() {
+  const subtotal = pendingModalItems.reduce((s, i) => s + parseFloat(i.price) * i.qty, 0);
+  const discount = pendingModalReturns * 3;
+  const total    = Math.max(0, subtotal - discount);
+  const el = document.getElementById('pm-total');
+  if (el) el.textContent = fmtMoney(total);
+}
+
 function closePendingModal() {
   document.getElementById('pending-modal').classList.remove('open');
-  pendingModalOrder = null;
+  pendingModalOrder   = null;
+  pendingModalItems   = [];
+  pendingModalReturns = 0;
 }
 
 async function confirmPendingOrder() {
   if (!pendingModalOrder) return;
-  const pay   = document.getElementById('pm-pay').value || 'Venmo';
-  const o     = pendingModalOrder;
-  const items = o.order_items || [];
 
-  // Deduct inventory optimistically and persist to Supabase
-  items.forEach(item => {
+  const activeItems = pendingModalItems.filter(i => i.qty > 0);
+  if (!activeItems.length) { alert('No items remaining in this order.'); return; }
+
+  const pay      = document.getElementById('pm-pay').value || 'Venmo';
+  const o        = pendingModalOrder;
+  const discount = pendingModalReturns * 3;
+  const subtotal = activeItems.reduce((s, i) => s + parseFloat(i.price) * i.qty, 0);
+  const total    = Math.max(0, subtotal - discount);
+
+  // Deduct inventory optimistically for active items only
+  activeItems.forEach(item => {
     const sku = state.skus.find(s => s.id === item.sku_id);
     if (sku) {
       sku.sold += item.qty;
@@ -287,22 +353,24 @@ async function confirmPendingOrder() {
   const sale = {
     id:        o.id,
     name:      o.customer_name || '—',
-    items:     items.map(i => ({
+    items:     activeItems.map(i => ({
       skuId:   i.sku_id,
       skuName: i.sku_name,
       qty:     i.qty,
       price:   parseFloat(i.price)
     })),
     pay,
-    discount:  0,
-    total:     parseFloat(o.total) || 0,
+    discount,
+    total,
     time:      new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
     createdAt: new Date().toISOString()
   };
   state.orders.unshift(sale);
   saveLocal();
 
-  dbConfirmPendingOrder(o.id, pay).catch(e => console.error('Confirm pending failed:', e));
+  // Persist: status, pay, total, discount + qty edits + removed items
+  dbConfirmPendingOrder(o.id, pay, pendingModalItems, total, discount)
+    .catch(e => console.error('Confirm pending failed:', e));
 
   closePendingModal();
   loadPendingForNewSale();

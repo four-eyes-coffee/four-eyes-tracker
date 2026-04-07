@@ -12,7 +12,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=3">
+  <link rel="stylesheet" href="css/styles.css?v=4">
 </head>
 <body>
 
@@ -390,6 +390,7 @@
     </div>
     <div id="esm-items-wrap"></div>
     <button class="modal-save" onclick="saveSaleEdit()">Save Changes</button>
+    <button class="modal-del"  onclick="deleteSaleFromModal()">Delete Sale</button>
   </div>
 </div>
 
@@ -417,6 +418,14 @@
     </div>
     <div class="field"><label>Notes</label><input type="text" id="pm-notes" placeholder="Optional" autocomplete="off"></div>
     <div id="pm-items"></div>
+    <div class="pm-returns-row">
+      <span class="pm-returns-label">Bottles Returned (&#x2212;$3 each)</span>
+      <div class="pm-returns-stepper">
+        <button class="ibtn" onclick="changePendingReturns(-1)">&#x2212;</button>
+        <span class="item-qty" id="pm-returns">0</span>
+        <button class="ibtn" onclick="changePendingReturns(1)">+</button>
+      </div>
+    </div>
     <div class="pm-total-box">
       <span class="pm-total-lbl">Total Due</span>
       <span class="pm-total-val" id="pm-total"></span>
@@ -427,16 +436,16 @@
 </div>
 
 <!-- ── Scripts ────────────────────────────────────────────────── -->
-<script src="js/supabase.js?v=3"></script>
-<script src="js/app.js?v=3"></script>
-<script src="js/dashboard.js?v=3"></script>
-<script src="js/newSale.js?v=3"></script>
-<script src="js/history/salesLog.js?v=3"></script>
-<script src="js/history/reconcile.js?v=3"></script>
-<script src="js/storeHub/inventory.js?v=3"></script>
-<script src="js/storeHub/cogs.js?v=3"></script>
-<script src="js/storeHub/dropCodes.js?v=3"></script>
-<script src="js/storeHub/fulfillment.js?v=3"></script>
+<script src="js/supabase.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
+<script src="js/dashboard.js?v=4"></script>
+<script src="js/newSale.js?v=4"></script>
+<script src="js/history/salesLog.js?v=4"></script>
+<script src="js/history/reconcile.js?v=4"></script>
+<script src="js/storeHub/inventory.js?v=4"></script>
+<script src="js/storeHub/cogs.js?v=4"></script>
+<script src="js/storeHub/dropCodes.js?v=4"></script>
+<script src="js/storeHub/fulfillment.js?v=4"></script>
 
 <script>
   // All scripts and DOM elements are loaded at this point.

@@ -6,35 +6,36 @@
 // ── Sale card builder ─────────────────────────────────────────────
 
 function buildSaleCard(s) {
-  const lines   = (s.items || []).map(i =>
-    `<div class="sc-item-line"><b>${esc(i.skuName)}</b> ×${i.qty} — $${i.price * i.qty}</div>`
-  ).join('');
+  const isGift  = s.pay === 'Gift';
   const bottles = s.discount > 0 ? Math.round(s.discount / 3) : 0;
-  const discTag = bottles > 0
-    ? `<span class="tag tdisc">${bottles} bottle${bottles > 1 ? 's' : ''} returned</span>`
+
+  const lines = (s.items || []).map(i =>
+    `<div class="sc-item-line">
+      <span><b>${esc(i.skuName)}</b> ×${i.qty}</span>
+      <span class="sc-item-price">$${i.price * i.qty}</span>
+    </div>`
+  ).join('');
+
+  const discBlock = bottles > 0
+    ? `<span class="sc-disc-tag">&#x2212;$${s.discount} · ${bottles} bottle${bottles > 1 ? 's' : ''} returned</span>`
     : '';
 
   return `<div class="sale-card">
     <div class="sc-top">
       <div class="sc-name">${esc(s.name)}</div>
-      <div class="sc-amt">
+      <div class="sc-amt${isGift ? ' gift' : ''}">
         ${fmtMoney(s.total)}
-        ${bottles > 0
-          ? `<span class="sc-disc-tag">&#x2212;$${s.discount} (${bottles} returned)</span>`
-          : ''}
+        ${discBlock}
       </div>
     </div>
     <div class="sc-items">${lines}</div>
     <div class="sc-bot">
       <div class="sc-tags">
-        <span class="tag tpay${s.pay === 'Gift' ? ' gift' : ''}">${esc(s.pay)}</span>
-        ${discTag}
+        <span class="tag tpay${isGift ? ' gift' : ''}">${esc(s.pay)}</span>
+        ${bottles > 0 ? `<span class="tag tdisc">${bottles} returned</span>` : ''}
         <span class="tag ttime">${esc(s.time)}</span>
       </div>
-      <div class="sc-actions">
-        <button class="edit-btn" onclick="openEditSale(${s.id})">Edit</button>
-        <button class="del-btn"  onclick="deleteSale(${s.id})">&#x2715;</button>
-      </div>
+      <button class="edit-btn" onclick="openEditSale(${s.id})">Edit</button>
     </div>
   </div>`;
 }
@@ -171,39 +172,52 @@ async function saveSaleEdit() {
   s.discount = disc;
   s.total    = Math.max(0, subtotal - disc);
 
-  // Persist updated sold counts to Supabase
-  (s.items || []).forEach(item => {
+  // Persist sold counts + order update in parallel
+  const skuUpdates = (s.items || []).map(item => {
     const sku = state.skus.find(sk => sk.id === item.skuId);
-    if (sku) dbUpdateSkuSold(sku.id, sku.sold).catch(e => console.error('Update sold failed:', e));
+    return sku
+      ? dbUpdateSkuSold(sku.id, sku.sold).catch(e => console.error('Update sold failed:', e))
+      : Promise.resolve();
   });
+  await Promise.all([
+    ...skuUpdates,
+    dbUpdateOrder(s).catch(e => console.error('Update order failed:', e))
+  ]);
 
   closeSaleModal();
   saveLocal();
   renderDashboard();
   renderHistory();
+}
 
-  dbUpdateOrder(s).catch(e => console.error('Update order failed:', e));
+// Delete from inside the edit modal
+async function deleteSaleFromModal() {
+  const id = parseInt(document.getElementById('esm-id').value);
+  closeSaleModal();
+  await deleteSale(id);
 }
 
 async function deleteSale(id) {
   const idx = state.orders.findIndex(o => o.id === id);
   if (idx === -1) return;
 
-  // Revert sold counts and persist to Supabase
-  (state.orders[idx].items || []).forEach(item => {
+  // Revert sold counts + delete from Supabase in parallel
+  const skuUpdates = (state.orders[idx].items || []).map(item => {
     const sku = state.skus.find(sk => sk.id === item.skuId);
-    if (sku) {
-      sku.sold = Math.max(0, sku.sold - item.qty);
-      dbUpdateSkuSold(sku.id, sku.sold).catch(e => console.error('Update sold failed:', e));
-    }
+    if (!sku) return Promise.resolve();
+    sku.sold = Math.max(0, sku.sold - item.qty);
+    return dbUpdateSkuSold(sku.id, sku.sold).catch(e => console.error('Update sold failed:', e));
   });
+
+  await Promise.all([
+    ...skuUpdates,
+    dbDeleteOrder(id).catch(e => console.error('Delete order failed:', e))
+  ]);
 
   state.orders.splice(idx, 1);
   saveLocal();
   renderDashboard();
   renderHistory();
-
-  dbDeleteOrder(id).catch(e => console.error('Delete order failed:', e));
 }
 
 function closeSaleModal() {
