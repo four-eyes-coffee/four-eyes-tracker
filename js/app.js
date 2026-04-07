@@ -3,7 +3,7 @@
    Routing · shared state · utilities · PIN · boot sequence
    ============================================================ */
 
-const APP_VERSION = '20260407-v20'; // UPDATE THIS on every deploy — drives silent auto-update check
+const APP_VERSION = '20260407-v21'; // UPDATE THIS on every deploy — drives silent auto-update check
 
 // ── Shared state ──────────────────────────────────────────────────
 // Single source of truth. All modules read/write this object.
@@ -193,6 +193,22 @@ document.addEventListener('keydown', e => {
   if (e.key >= '0' && e.key <= '9') pinPress(e.key);
   else if (e.key === 'Backspace') pinBack();
 });
+
+// ── Service Worker registration ────────────────────────────────────
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/four-eyes-tracker/sw.js')
+    .then(reg => {
+      // When a new SW takes over, it posts SW_UPDATED — reload to get fresh assets
+      navigator.serviceWorker.addEventListener('message', e => {
+        if (e.data?.type === 'SW_UPDATED') {
+          console.log('SW updated to', e.data.version, '— reloading');
+          window.location.reload();
+        }
+      });
+    })
+    .catch(e => console.warn('SW registration failed:', e));
+}
 
 // ── App update check ──────────────────────────────────────────────
 
