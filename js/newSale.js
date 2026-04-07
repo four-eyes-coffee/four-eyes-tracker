@@ -121,18 +121,25 @@ function updateOrderTotal() {
   el.textContent = fmtMoney(Math.max(0, subtotal - formReturns * 3));
 }
 
-// ── Email toast (DB trigger handles actual send) ──────────────────
+// ── Email status (persistent — shown on success screen + pending cards) ──
 
-function showEmailToast(email) {
-  const toast = document.getElementById('email-toast');
-  if (!toast || !email) return;
-  toast.className = 'email-toast toast-sent show';
-  toast.innerHTML = `<span class="toast-icon">✉</span><span>Confirmation sent to ${email}</span>`;
-  toast.style.display = 'flex';
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => { toast.style.display = 'none'; }, 400);
-  }, 4000);
+function setSuccessEmailStatus(email) {
+  const el = document.getElementById('success-email-status');
+  if (!el) return;
+  if (email) {
+    el.className = 'success-email-status status-queued';
+    el.innerHTML = `✉ Confirmation queued → ${email}`;
+    el.style.display = 'flex';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function emailStatusTag(email) {
+  if (email) {
+    return `<span class="status-tag queued">✉ ${email} · Queued</span>`;
+  }
+  return `<span class="status-tag no-email">✉ No email on file</span>`;
 }
 
 // ── Sale submission ───────────────────────────────────────────────
@@ -182,8 +189,8 @@ async function logSale() {
   // DB trigger fires on insert → sends confirmation email automatically
   dbSaveOrder(sale).catch(e => console.error('Save order failed:', e));
 
-  // Toast feedback — DB handles the actual send
-  showEmailToast(email);
+  // Persistent email status on success screen
+  setSuccessEmailStatus(email);
 
   renderDashboard();
   if (typeof renderHistory === 'function') renderHistory();
@@ -201,6 +208,7 @@ function logAnother() {
   document.getElementById('f-name').value          = '';
   document.getElementById('f-email').value         = '';
   document.getElementById('f-returns').textContent = '0';
+  setSuccessEmailStatus(null);
   document.querySelectorAll('.pay-pill').forEach(p => p.classList.remove('selected'));
   document.getElementById('sale-form-wrap').style.display = 'block';
   document.getElementById('sale-success').classList.remove('show');
@@ -234,6 +242,7 @@ async function loadPendingForNewSale() {
           <div class="pending-window">${windowLabel}</div>
         </div>
         <div class="pending-items">${lines}</div>
+        ${emailStatusTag(o.customer_email)}
         <div class="pending-actions">
           <button class="approve-btn" onclick="approveOrder(${o.id})">View &amp; Approve</button>
           <button class="reject-btn"  onclick="rejectPendingOrder(${o.id})">Decline</button>
@@ -421,9 +430,6 @@ async function confirmPendingOrder() {
   // DB trigger fires on status UPDATE → 'completed' and sends confirmation email
   dbConfirmPendingOrder(o.id, pay, pendingModalItems, total, discount)
     .catch(e => console.error('Confirm pending failed:', e));
-
-  // Toast if customer email exists on the order
-  if (o.customer_email) showEmailToast(o.customer_email);
 
   closePendingModal();
   loadPendingForNewSale();

@@ -14,34 +14,37 @@
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css?v=13">
   <style>
-    .email-toast {
-      position: fixed;
-      bottom: calc(72px + env(safe-area-inset-bottom, 0px));
-      left: 50%;
-      transform: translateX(-50%) translateY(16px);
+    /* ── Email status badges ─────────────────────────────── */
+    .success-email-status {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 10px 18px;
-      border-radius: 20px;
-      font-size: 13px;
+      gap: 6px;
+      font-size: 12px;
       font-weight: 600;
       font-family: 'Rubik', sans-serif;
+      padding: 6px 12px;
+      border-radius: 20px;
+      margin: 10px auto 4px;
+      width: fit-content;
+    }
+    .success-email-status.status-queued {
       background: #1a3a1a;
       color: #6fcf6f;
       border: 1px solid #2d6b2d;
-      opacity: 0;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-      z-index: 9999;
-      white-space: nowrap;
-      pointer-events: none;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
-    .email-toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
+    .status-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: 'Rubik', sans-serif;
+      padding: 3px 9px;
+      border-radius: 20px;
+      margin-top: 6px;
     }
-    .toast-icon { font-size: 14px; }
+    .status-tag.queued  { background: #1a2a1a; color: #6fcf6f; border: 1px solid #2d4a2d; }
+    .status-tag.no-email { background: #1e1e1e; color: #555;    border: 1px solid #2a2a2a; }
   </style>
 </head>
 <body>
@@ -224,6 +227,7 @@
     <div class="si">&#x2713;</div>
     <div class="sm" id="success-name"></div>
     <div class="ss" id="success-detail"></div>
+    <div class="success-email-status" id="success-email-status" style="display:none;"></div>
     <button class="log-again-btn"   onclick="logAnother()">+ Log Another Sale</button>
     <button class="see-history-btn" onclick="switchTab('history')">View History</button>
   </div>
@@ -515,9 +519,6 @@
     <button class="modal-del"     onclick="declinePendingOrder()">Decline Order</button>
   </div>
 </div>
-
-<!-- ── Email status toast ──────────────────────────────────────── -->
-<div id="email-toast" class="email-toast" style="display:none;"></div>
 
 <!-- ── Scripts ────────────────────────────────────────────────── -->
 <script src="js/supabase.js?v=13"></script>
