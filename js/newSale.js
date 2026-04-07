@@ -121,18 +121,25 @@ function updateOrderTotal() {
   el.textContent = fmtMoney(Math.max(0, subtotal - formReturns * 3));
 }
 
-// ── Email toast (DB trigger handles actual send) ──────────────────
+// ── Email status (persistent — shown on success screen + pending cards) ──
 
-function showEmailToast(email) {
-  const toast = document.getElementById('email-toast');
-  if (!toast || !email) return;
-  toast.className = 'email-toast toast-sent show';
-  toast.innerHTML = `<span class="toast-icon">✉</span><span>Confirmation sent to ${email}</span>`;
-  toast.style.display = 'flex';
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => { toast.style.display = 'none'; }, 400);
-  }, 4000);
+function setSuccessEmailStatus(email) {
+  const el = document.getElementById('success-email-status');
+  if (!el) return;
+  if (email) {
+    el.className = 'success-email-status status-sent';
+    el.innerHTML = `✉ &nbsp;EMAIL SENT`;
+    el.style.display = 'flex';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function emailStatusTag(email) {
+  if (email) {
+    return `<span class="status-tag sent" style="margin-bottom:12px;">✉ &nbsp;EMAIL SENT</span>`;
+  }
+  return '';
 }
 
 // ── Sale submission ───────────────────────────────────────────────
@@ -151,7 +158,7 @@ async function logSale() {
   }, 0);
   const total = formPay === 'Gift' ? 0 : Math.max(0, subtotal - disc);
 
-  // Deduct sold counts optimistically
+  // Optimistically deduct sold counts
   cart.forEach(item => {
     const sku = state.skus.find(s => s.id === item.skuId);
     if (sku) {
@@ -176,24 +183,48 @@ async function logSale() {
     createdAt: now.toISOString()
   };
 
-  state.orders.unshift(sale);
-  saveLocal();
+  // Disable button to prevent double-submit
+  const btn = document.querySelector('.submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
 
-  // DB trigger fires on insert → sends confirmation email automatically
-  dbSaveOrder(sale).catch(e => console.error('Save order failed:', e));
+  try {
+    state.orders.unshift(sale);
+    saveLocal();
 
-  // Toast feedback — DB handles the actual send
-  showEmailToast(email);
+    // Await the DB save — email trigger fires after items insert
+    await dbSaveOrder(sale);
 
-  renderDashboard();
-  if (typeof renderHistory === 'function') renderHistory();
+    setSuccessEmailStatus(email);
+    renderDashboard();
+    if (typeof renderHistory === 'function') renderHistory();
 
-  document.getElementById('sale-form-wrap').style.display = 'none';
-  document.getElementById('sale-success').classList.add('show');
-  document.getElementById('success-name').textContent = `${name} — ${fmtMoney(total)}`;
-  const lines = sale.items.map(i => `${i.skuName} ×${i.qty}`).join(', ');
-  document.getElementById('success-detail').textContent = lines +
-    (formReturns > 0 ? ` · ${formReturns} bottle${formReturns > 1 ? 's' : ''} returned` : '');
+    document.getElementById('sale-form-wrap').style.display = 'none';
+    document.getElementById('sale-success').classList.add('show');
+    document.getElementById('success-name').textContent = `${name} — ${fmtMoney(total)}`;
+    const lines = sale.items.map(i => `${i.skuName} ×${i.qty}`).join(', ');
+    document.getElementById('success-detail').textContent = lines +
+      (formReturns > 0 ? ` · ${formReturns} bottle${formReturns > 1 ? 's' : ''} returned` : '');
+
+  } catch (e) {
+    console.error('Save order failed:', e);
+
+    // Roll back optimistic updates
+    state.orders.shift();
+    saveLocal();
+    cart.forEach(item => {
+      const sku = state.skus.find(s => s.id === item.skuId);
+      if (sku) {
+        sku.sold -= item.qty;
+        dbUpdateSkuSold(sku.id, sku.sold).catch(() => {});
+      }
+    });
+    renderDashboard();
+
+    alert('Failed to save order. Check your connection and try again.');
+
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Log Sale'; }
+  }
 }
 
 function logAnother() {
@@ -201,6 +232,7 @@ function logAnother() {
   document.getElementById('f-name').value          = '';
   document.getElementById('f-email').value         = '';
   document.getElementById('f-returns').textContent = '0';
+  setSuccessEmailStatus(null);
   document.querySelectorAll('.pay-pill').forEach(p => p.classList.remove('selected'));
   document.getElementById('sale-form-wrap').style.display = 'block';
   document.getElementById('sale-success').classList.remove('show');
@@ -228,12 +260,18 @@ async function loadPendingForNewSale() {
       const windowLabel = o.fulfillment_type
         ? esc(o.fulfillment_type) + (o.fulfillment_window ? ' · ' + esc(o.fulfillment_window) : '')
         : '';
-      return `<div class="pending-card">
+      const dropType  = (o.code_type === 'family') ? 'FAMILY' : 'PUBLIC';
+      const dropClass = (o.code_type === 'family') ? 'drop-family' : 'drop-public';
+      return `<div class="pending-card ${dropClass}">
         <div class="pending-card-top">
           <div class="pending-name">${esc(o.customer_name || '—')}</div>
-          <div class="pending-window">${windowLabel}</div>
+          <div class="pending-window">
+            <span class="drop-badge ${dropClass}">${dropType}</span>
+            ${windowLabel}
+          </div>
         </div>
         <div class="pending-items">${lines}</div>
+        ${emailStatusTag(o.customer_email)}
         <div class="pending-actions">
           <button class="approve-btn" onclick="approveOrder(${o.id})">View &amp; Approve</button>
           <button class="reject-btn"  onclick="rejectPendingOrder(${o.id})">Decline</button>
@@ -421,9 +459,6 @@ async function confirmPendingOrder() {
   // DB trigger fires on status UPDATE → 'completed' and sends confirmation email
   dbConfirmPendingOrder(o.id, pay, pendingModalItems, total, discount)
     .catch(e => console.error('Confirm pending failed:', e));
-
-  // Toast if customer email exists on the order
-  if (o.customer_email) showEmailToast(o.customer_email);
 
   closePendingModal();
   loadPendingForNewSale();
