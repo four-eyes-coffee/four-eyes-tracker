@@ -136,8 +136,6 @@
   .window-copy { font-size:11px; color:rgba(255,255,255,0.35); margin-top:8px; font-style:italic; }
 
   /* ── Contact note ─────────────────────────────────────────── */
-  .contact-note { padding:14px 16px; background:var(--card); border:1.5px solid var(--border); border-radius:3px; margin-top:16px; font-size:12px; color:var(--muted); line-height:1.7; }
-  .contact-note b { color:var(--white); font-weight:700; }
 
   /* ── Order summary ────────────────────────────────────────── */
   .order-sum-card { background:var(--yellow); color:var(--black); border-radius:3px; padding:18px 16px; margin-bottom:16px; }
@@ -155,7 +153,16 @@
   /* ── Buttons ──────────────────────────────────────────────── */
   .primary-btn { width:100%; padding:18px; background:var(--accent); color:var(--black); border:none; border-radius:3px; font-family:'Rubik',sans-serif; font-size:13px; font-weight:900; letter-spacing:2px; text-transform:uppercase; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .primary-btn:active { opacity:0.8; }
-  .primary-btn:disabled { opacity:0.3; cursor:not-allowed; }
+  .primary-btn:disabled {
+    background: transparent;
+    border: 2px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.28);
+    opacity: 1;
+    cursor: not-allowed;
+  }
+
+  /* Hint text under input fields */
+  .field-hint { font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6; padding:0 2px; }
   .secondary-btn { width:100%; padding:15px; background:transparent; border:2px solid var(--border); border-radius:3px; font-family:'Rubik',sans-serif; font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); cursor:pointer; margin-top:10px; -webkit-tap-highlight-color:transparent; }
   .secondary-btn:active { border-color:var(--white); color:var(--white); }
 
@@ -246,12 +253,11 @@
     <div class="field"><label>Full Name</label>
       <input type="text" id="d-name" placeholder="First and last name" autocomplete="name"></div>
     <div class="field"><label>Email</label>
-      <input type="email" id="d-email" placeholder="your@email.com" autocomplete="email"></div>
+      <input type="email" id="d-email" placeholder="your@email.com" autocomplete="email">
+      <div class="field-hint">Used for your order confirmation.</div></div>
     <div class="field"><label>Phone</label>
-      <input type="tel" id="d-phone" placeholder="+1 (213) 000-0000" autocomplete="tel"></div>
-    <div class="contact-note">
-      <b>Your email</b> will be used for order confirmation.<span id="delivery-phone-note" style="display:none;"> <b>Your phone number</b> will be used to reach you on the day of delivery.</span>
-    </div>
+      <input type="tel" id="d-phone" placeholder="+1 (213) 000-0000" autocomplete="tel">
+      <div class="field-hint" id="phone-hint">We'll use this to reach you on the day of pickup.</div></div>
     <button class="primary-btn" style="margin-top:20px;" onclick="goToReview()">Review Order</button>
     <button class="secondary-btn" onclick="goToStep(1)">Back</button>
   </div>
@@ -375,7 +381,7 @@
     const isFamily = type === 'family';
     const headline = isFamily ? "You're<br>in early." : "Drop<br>unlocked.";
     const subtext  = isFamily
-      ? "Here's what we brewed this week. Order freely — we brew your batch first."
+      ? "First look, first pour. Here's what we're making this week."
       : "Limited run. Grab your bottles before they're gone.";
 
     document.getElementById('screen-code').innerHTML = `
@@ -537,9 +543,13 @@
     document.querySelectorAll('.option-pill').forEach(p => p.classList.remove('selected'));
     if (el) el.classList.add('selected');
 
-    // Show phone note on details screen when delivery is chosen
-    const phoneNote = document.getElementById('delivery-phone-note');
-    if (phoneNote) phoneNote.style.display = type === 'delivery' ? 'inline' : 'none';
+    // Update phone hint on details screen based on fulfillment type
+    const phoneHint = document.getElementById('phone-hint');
+    if (phoneHint) {
+      phoneHint.textContent = type === 'delivery'
+        ? "We'll use this to coordinate your delivery window."
+        : "We'll use this to reach you on the day of pickup.";
+    }
 
     document.getElementById('window-grid').innerHTML = WINDOWS[type].map((w, i) =>
       `<div class="window-card" onclick="selectWindow('${esc(w.label)}',this)" id="wcard-${i}">
@@ -553,13 +563,16 @@
     ).join('');
 
     document.getElementById('fulfillment-next-btn').disabled = true;
+    document.getElementById('fulfillment-next-btn').textContent = 'Select a window to continue';
   }
 
   function selectWindow(label, el) {
     order.window = label;
     document.querySelectorAll('.window-card').forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
-    document.getElementById('fulfillment-next-btn').disabled = false;
+    const btn = document.getElementById('fulfillment-next-btn');
+    btn.disabled = false;
+    btn.textContent = 'Continue';
   }
 
   function goToDetails() {
