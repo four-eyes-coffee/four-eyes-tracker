@@ -4,6 +4,7 @@
    ============================================================ */
 
 function renderDashboard() {
+  const now     = new Date();
   const curKey  = currentMonthKey();
   const prevKey = prevMonthKey();
 
