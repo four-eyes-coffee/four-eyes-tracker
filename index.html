@@ -12,7 +12,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=12">
+  <link rel="stylesheet" href="css/styles.css?v=13">
 </head>
 <body>
 
@@ -463,6 +463,10 @@
     </div>
     <div class="field"><label>Notes</label><input type="text" id="pm-notes" placeholder="Optional" autocomplete="off"></div>
     <div id="pm-items"></div>
+    <div id="pm-add-flavor-wrap" style="display:none; margin-top:14px;">
+      <div class="modal-items-label">Add Flavor</div>
+      <div id="pm-flavor-picker" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;"></div>
+    </div>
     <div class="pm-returns-row">
       <span class="pm-returns-label">Bottles Returned (&#x2212;$3 each)</span>
       <div class="pm-returns-stepper">
@@ -481,16 +485,16 @@
 </div>
 
 <!-- ── Scripts ────────────────────────────────────────────────── -->
-<script src="js/supabase.js?v=12"></script>
-<script src="js/app.js?v=12"></script>
-<script src="js/dashboard.js?v=12"></script>
-<script src="js/newSale.js?v=12"></script>
-<script src="js/history/salesLog.js?v=12"></script>
-<script src="js/history/reconcile.js?v=12"></script>
-<script src="js/storeHub/inventory.js?v=12"></script>
-<script src="js/storeHub/cogs.js?v=12"></script>
-<script src="js/storeHub/dropCodes.js?v=12"></script>
-<script src="js/storeHub/fulfillment.js?v=12"></script>
+<script src="js/supabase.js?v=13"></script>
+<script src="js/app.js?v=13"></script>
+<script src="js/dashboard.js?v=13"></script>
+<script src="js/newSale.js?v=13"></script>
+<script src="js/history/salesLog.js?v=13"></script>
+<script src="js/history/reconcile.js?v=13"></script>
+<script src="js/storeHub/inventory.js?v=13"></script>
+<script src="js/storeHub/cogs.js?v=13"></script>
+<script src="js/storeHub/dropCodes.js?v=13"></script>
+<script src="js/storeHub/fulfillment.js?v=13"></script>
 
 <script>
   // All scripts and DOM elements are loaded at this point.

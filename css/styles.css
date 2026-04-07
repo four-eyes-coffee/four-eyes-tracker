@@ -444,7 +444,6 @@ header {
   margin-top: 14px;
 }
 .submit-btn:active   { opacity: 0.8; }
-.submit-btn--mb      { margin-bottom: 10px; }
 
 /* ── Sale success state ──────────────────────────────────── */
 .sale-success       { display: none; padding: 32px 16px 0; text-align: center; }
@@ -1090,11 +1089,6 @@ header {
 .cogs-add-bean-btn:active { border-color: var(--yellow); color: var(--yellow); }
 
 /* Batch bean rows */
-.bat-bean-row     { margin-bottom: 8px; }
-.bat-bean-inputs  { display: flex; gap: 6px; align-items: center; }
-.bat-bean-name    { flex: 1; }
-.bat-bean-weight  { display: flex; gap: 4px; flex-shrink: 0; }
-.bat-bean-grams   { width: 72px; }
 .bat-bean-hint    { font-size: 9px; color: var(--blue); font-weight: 700; letter-spacing: 0.5px; margin-top: 3px; padding-left: 2px; }
 
 /* Batch cost calc box */

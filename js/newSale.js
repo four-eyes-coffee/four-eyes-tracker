@@ -264,6 +264,7 @@ function openPendingModal(order) {
   document.getElementById('pm-returns').textContent = '0';
 
   renderPendingModalItems();
+  renderPendingModalFlavors();
   updatePendingTotal();
 
   document.getElementById('pending-modal').classList.add('open');
@@ -287,6 +288,41 @@ function renderPendingModalItems() {
     ).join('');
 }
 
+function renderPendingModalFlavors() {
+  const wrap   = document.getElementById('pm-add-flavor-wrap');
+  const picker = document.getElementById('pm-flavor-picker');
+  if (!wrap || !picker) return;
+
+  // Show only production SKUs not already in the order
+  const inOrderIds = new Set(pendingModalItems.map(i => i.sku_id));
+  const available  = state.skus.filter(s =>
+    (s.sku_type || 'production') === 'production' && !inOrderIds.has(s.id)
+  );
+
+  wrap.style.display = available.length ? 'block' : 'none';
+  if (!available.length) { picker.innerHTML = ''; return; }
+
+  picker.innerHTML = available.map(sku => {
+    const avail  = sku.stock - sku.sold;
+    const isOut  = avail === 0;
+    const subTxt = isOut ? 'sold out' : `${avail} left · $${sku.price}`;
+    return `<button class="flavor-btn${isOut ? ' disabled' : ''}" ${isOut ? 'disabled' : ''}
+              onclick="addToPendingOrder(${sku.id})">
+      <span class="fn">${esc(sku.name)}</span>
+      <span class="fs">${subTxt}</span>
+    </button>`;
+  }).join('');
+}
+
+function addToPendingOrder(skuId) {
+  const sku = state.skus.find(s => s.id === skuId);
+  if (!sku || pendingModalItems.find(i => i.sku_id === skuId)) return;
+  pendingModalItems.push({ sku_id: skuId, sku_name: sku.name, qty: 1, price: sku.price });
+  renderPendingModalItems();
+  renderPendingModalFlavors();
+  updatePendingTotal();
+}
+
 function changePendingItemQty(skuId, delta) {
   const item = pendingModalItems.find(i => i.sku_id === skuId);
   if (!item) return;
@@ -304,6 +340,7 @@ function removePendingItem(skuId) {
   pendingModalItems = pendingModalItems.filter(i => i.sku_id !== skuId);
   const row = document.getElementById(`pmi-${skuId}`);
   if (row) row.remove();
+  renderPendingModalFlavors(); // removed item reappears as addable
   updatePendingTotal();
 }
 
