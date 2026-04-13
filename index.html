@@ -12,7 +12,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=18">
+  <link rel="stylesheet" href="css/styles.css?v=22">
   <style>
     /* ── Drop type badges ────────────────────────────────── */
     .drop-badge {
@@ -28,12 +28,12 @@
       position: relative;
       top: -1px;
     }
-    .drop-public {
+    .drop-badge.drop-public {
       background: rgba(32,51,255,0.15);
       color: #2033ff;
       border: 1px solid rgba(32,51,255,0.3);
     }
-    .drop-family {
+    .drop-badge.drop-family {
       background: rgba(230,255,0,0.1);
       color: #e6ff00;
       border: 1px solid rgba(230,255,0,0.25);
@@ -66,12 +66,12 @@
       margin-top: 8px;
       margin-bottom: 14px;
     }
-    /* Sent — green */
+    /* Sent — muted green */
     .status-tag.sent,
     .success-email-status.status-sent {
-      background: #1a3a1a;
-      color: #6fcf6f;
-      border: 1px solid #2d6b2d;
+      background: rgba(255,255,255,0.06);
+      color: #7aab7a;
+      border: 1px solid rgba(122,171,122,0.25);
     }
     /* Error — red, failed */
     .status-tag.error,
@@ -483,31 +483,7 @@
 </div>
 
 <div class="modal-overlay" id="sale-modal">
-  <div class="modal">
-    <div class="modal-hdr">
-      <span>Edit Sale</span>
-      <button class="modal-close" onclick="closeSaleModal()">&#x2715;</button>
-    </div>
-    <input type="hidden" id="esm-id">
-    <div class="field"><label>Customer Name</label><input type="text" id="esm-name" autocomplete="off"></div>
-    <div class="field">
-      <label>Payment</label>
-      <select id="esm-pay" class="pay-select">
-        <option value="Venmo">Venmo</option>
-        <option value="Cash">Cash</option>
-        <option value="Zelle">Zelle</option>
-        <option value="Card">Card</option>
-        <option value="Gift">Gift</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Bottles Returned (&#x2212;$3 each)</label>
-      <input type="number" id="esm-discount" min="0" inputmode="numeric" placeholder="0">
-    </div>
-    <div id="esm-items-wrap"></div>
-    <button class="modal-save" onclick="saveSaleEdit()">Save Changes</button>
-    <button class="modal-del"  onclick="deleteSaleFromModal()">Delete Sale</button>
-  </div>
+  <div class="modal" id="sale-modal-inner"></div>
 </div>
 
 <div class="modal-overlay" id="pending-modal">
@@ -556,16 +532,14 @@
 </div>
 
 <!-- ── Scripts ────────────────────────────────────────────────── -->
-<script src="js/supabase.js?v=18"></script>
-<script src="js/app.js?v=18"></script>
-<script src="js/dashboard.js?v=18"></script>
-<script src="js/newSale.js?v=18"></script>
-<script src="js/history/salesLog.js?v=18"></script>
-<script src="js/history/reconcile.js?v=18"></script>
-<script src="js/storeHub/inventory.js?v=18"></script>
-<script src="js/storeHub/cogs.js?v=18"></script>
-<script src="js/storeHub/dropCodes.js?v=18"></script>
-<script src="js/storeHub/fulfillment.js?v=18"></script>
+<script src="js/supabase.js?v=22"></script>
+<script src="js/app.js?v=22"></script>
+<script src="js/dashboard.js?v=22"></script>
+<script src="js/newSale.js?v=22"></script>
+<script src="js/history/salesLog.js?v=22"></script>
+<script src="js/storeHub/inventory.js?v=22"></script>
+<script src="js/storeHub/cogs.js?v=22"></script>
+<script src="js/storeHub/dropCodes.js?v=22"></script>
 
 <script>
   // All scripts and DOM elements are loaded at this point.

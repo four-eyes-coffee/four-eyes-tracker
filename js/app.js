@@ -3,7 +3,7 @@
    Routing · shared state · utilities · PIN · boot sequence
    ============================================================ */
 
-const APP_VERSION = '20260406-phase4'; // auto-updated on each deploy
+const APP_VERSION = '20260413-v22'; // UPDATE THIS on every deploy — drives silent auto-update check
 
 // ── Shared state ──────────────────────────────────────────────────
 // Single source of truth. All modules read/write this object.
@@ -45,6 +45,19 @@ function getSaleMonthKey(order) {
   }
   const n = new Date();
   return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+}
+
+// Current and previous month keys — shared across dashboard + history
+function currentMonthKey() {
+  const n = new Date();
+  return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+}
+
+function prevMonthKey() {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
 }
 
 // Format YYYY-MM key as "March 2026"
@@ -180,6 +193,22 @@ document.addEventListener('keydown', e => {
   if (e.key >= '0' && e.key <= '9') pinPress(e.key);
   else if (e.key === 'Backspace') pinBack();
 });
+
+// ── Service Worker registration ────────────────────────────────────
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/four-eyes-tracker/sw.js')
+    .then(reg => {
+      // When a new SW takes over, it posts SW_UPDATED — reload to get fresh assets
+      navigator.serviceWorker.addEventListener('message', e => {
+        if (e.data?.type === 'SW_UPDATED') {
+          console.log('SW updated to', e.data.version, '— reloading');
+          window.location.reload();
+        }
+      });
+    })
+    .catch(e => console.warn('SW registration failed:', e));
+}
 
 // ── App update check ──────────────────────────────────────────────
 

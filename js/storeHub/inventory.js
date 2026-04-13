@@ -110,11 +110,13 @@ async function saveSku() {
   if (!stock || stock < 1){ alert('Enter bottle count.');  return; }
   if (!price || price <= 0){ alert('Enter a price.');      return; }
 
-  let savedSku;
+  // Snapshot previous values for rollback on failure
+  let savedSku, prevSnapshot = null;
   if (id) {
     const sku = state.skus.find(s => s.id === parseInt(id));
     if (!sku) return;
     if (stock < sku.sold) { alert(`Can't set stock below already sold (${sku.sold}).`); return; }
+    prevSnapshot = { name: sku.name, stock: sku.stock, price: sku.price, description: sku.description, sku_type: sku.sku_type };
     sku.name        = name;
     sku.stock       = stock;
     sku.price       = price;
@@ -133,7 +135,25 @@ async function saveSku() {
   renderDashboard();
   if (typeof renderSaleForm === 'function') renderSaleForm();
 
-  dbSaveSku(savedSku).catch(e => console.error('Save SKU failed:', e));
+  // Await DB save — rollback local state if it fails
+  try {
+    await dbSaveSku(savedSku);
+  } catch(e) {
+    console.error('Save SKU failed:', e);
+    if (prevSnapshot && id) {
+      // Rollback edit
+      const sku = state.skus.find(s => s.id === parseInt(id));
+      if (sku) Object.assign(sku, prevSnapshot);
+    } else if (!id) {
+      // Rollback new SKU
+      state.skus = state.skus.filter(s => s.id !== savedSku.id);
+    }
+    saveLocal();
+    renderInventory();
+    renderDashboard();
+    if (typeof renderSaleForm === 'function') renderSaleForm();
+    alert('Failed to save to database — your change was reverted. Error: ' + (e?.message || e));
+  }
 }
 
 async function deleteSku() {

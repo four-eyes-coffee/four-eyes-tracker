@@ -154,7 +154,7 @@ async function dbDeleteOrder(id) {
   if (error) throw error;
 }
 
-// Update editable fields on a completed order
+// Update editable fields on a completed order (legacy — qty-only updates)
 async function dbUpdateOrder(sale) {
   const { error } = await _supa.from('orders').update({
     customer_name: sale.name,
@@ -171,6 +171,33 @@ async function dbUpdateOrder(sale) {
       .eq('order_id', sale.id)
       .eq('sku_id', item.skuId)
   ));
+}
+
+// Full order update — handles adding, removing, and editing line items
+async function dbUpdateOrderFull(sale) {
+  // Update order header
+  const { error } = await _supa.from('orders').update({
+    customer_name: sale.name,
+    pay_method:    sale.pay,
+    discount:      sale.discount,
+    total:         sale.total
+  }).eq('id', sale.id);
+  if (error) throw error;
+
+  // Delete all existing line items and re-insert the current set
+  await _supa.from('order_items').delete().eq('order_id', sale.id);
+  if (sale.items && sale.items.length) {
+    const { error: itemsError } = await _supa.from('order_items').insert(
+      sale.items.map(i => ({
+        order_id: sale.id,
+        sku_id:   i.skuId,
+        sku_name: i.skuName,
+        qty:      i.qty,
+        price:    i.price
+      }))
+    );
+    if (itemsError) throw itemsError;
+  }
 }
 
 // ── Pending orders (pre-orders from order.html) ───────────────────
@@ -283,6 +310,27 @@ async function dbLoad() {
   return { skus, orders, batches, equipment };
 }
 
+// ── RLS diagnostic — test write access to COGS tables ────────────
+
+async function dbCheckCogsAccess() {
+  const tables = ['bean_purchases', 'packaging_purchases', 'equipment_purchases', 'batches'];
+  const results = {};
+  for (const table of tables) {
+    try {
+      // Try a simple select — if RLS blocks even reads, we'll know
+      const { data, error } = await _supa.from(table).select('id').limit(1);
+      if (error) {
+        results[table] = { ok: false, error: error.message };
+      } else {
+        results[table] = { ok: true };
+      }
+    } catch(e) {
+      results[table] = { ok: false, error: e.message || String(e) };
+    }
+  }
+  return results;
+}
+
 // ── COGS — Bean Purchases ─────────────────────────────────────────
 
 async function dbLoadBeanPurchases() {
@@ -305,6 +353,7 @@ async function dbSaveBeanPurchase(p) {
     notes:        p.notes || null
   }).select().single();
   if (error) throw error;
+  if (!data) throw new Error('Bean purchase saved but no data returned — check RLS policies on bean_purchases table');
   return data;
 }
 
@@ -349,6 +398,7 @@ async function dbSavePackagingPurchase(p) {
     notes:        p.notes || null
   }).select().single();
   if (error) throw error;
+  if (!data) throw new Error('Packaging purchase saved but no data returned — check RLS policies on packaging_purchases table');
   return data;
 }
 
@@ -391,6 +441,7 @@ async function dbSaveEquipmentPurchase(p) {
     notes:        p.notes || null
   }).select().single();
   if (error) throw error;
+  if (!data) throw new Error('Equipment purchase saved but no data returned — check RLS policies on equipment_purchases table');
   return data;
 }
 
@@ -436,6 +487,7 @@ async function dbSaveBatch(b) {
     notes:            b.notes || null
   }).select().single();
   if (error) throw error;
+  if (!data) throw new Error('Batch saved but no data returned — check RLS policies on batches table');
   return data;
 }
 

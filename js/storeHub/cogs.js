@@ -70,6 +70,20 @@ function _beanNameDatalist() {
 async function initCogs() {
   renderCogsShell();
   try {
+    // Check table access first — COGS tables may lack RLS policies
+    if (typeof dbCheckCogsAccess === 'function') {
+      const access = await dbCheckCogsAccess();
+      const blocked = Object.entries(access).filter(([, v]) => !v.ok);
+      if (blocked.length) {
+        const names = blocked.map(([t, v]) => `${t}: ${v.error}`).join('\n');
+        console.error('COGS table access issues:\n' + names);
+        document.getElementById('inner-cogs').innerHTML +=
+          `<div class="cogs-error" style="white-space:pre-line;">
+            ⚠ Supabase access issue on COGS tables.\nAdd RLS policies (USING (true) WITH CHECK (true)) for:\n${blocked.map(([t]) => '• ' + t).join('\n')}
+          </div>`;
+      }
+    }
+
     // Beans and packaging are never in shared state — always fetch fresh
     // Equipment and batches are loaded at boot into state — seed from there,
     // avoiding 2 redundant round-trips every time the COGS tab first opens
@@ -88,7 +102,7 @@ async function initCogs() {
   } catch(e) {
     console.error('COGS load failed:', e);
     document.getElementById('inner-cogs').innerHTML +=
-      '<div class="cogs-error">Failed to load COGS data.</div>';
+      '<div class="cogs-error">Failed to load COGS data. Check Supabase RLS policies.</div>';
   }
 }
 
