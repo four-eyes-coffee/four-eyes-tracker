@@ -96,7 +96,9 @@ function removeFromCart(skuId) {
 
 function selectPay(method, el) {
   formPay = method;
-  document.querySelectorAll('.pay-pill').forEach(p => p.classList.remove('selected'));
+  // Scope to the New Sale panel only — avoid touching edit modal pills
+  const panel = document.getElementById('panel-newsale');
+  if (panel) panel.querySelectorAll('.pay-pill').forEach(p => p.classList.remove('selected'));
   el.classList.add('selected');
   updateOrderTotal();
 }

@@ -161,12 +161,10 @@ async function deleteSku() {
   const sku = state.skus.find(s => s.id === id);
   if (!sku || !confirm(`Remove "${sku.name}"?`)) return;
 
-  dbDeleteSku(id).catch(e => console.error('Delete SKU failed:', e));
-
-  state.skus   = state.skus.filter(s => s.id !== id);
-  state.orders = state.orders.filter(o =>
-    !(o.items || []).some(i => i.skuId === id)
-  );
+  // Optimistically remove from UI
+  const snapshot = { ...sku };
+  const idx = state.skus.indexOf(sku);
+  state.skus = state.skus.filter(s => s.id !== id);
 
   closeSkuModal();
   saveLocal();
@@ -174,6 +172,19 @@ async function deleteSku() {
   renderDashboard();
   if (typeof renderHistory  === 'function') renderHistory();
   if (typeof renderSaleForm === 'function') renderSaleForm();
+
+  // Await DB soft-delete — rollback if it fails
+  try {
+    await dbDeleteSku(id);
+  } catch(e) {
+    console.error('Delete SKU failed:', e);
+    state.skus.splice(idx, 0, snapshot);
+    saveLocal();
+    renderInventory();
+    renderDashboard();
+    if (typeof renderSaleForm === 'function') renderSaleForm();
+    alert('Failed to delete — your change was reverted. Error: ' + (e?.message || e));
+  }
 }
 
 function closeSkuModal() {

@@ -501,8 +501,10 @@ async function saveCogsEquipmentPurchase(id) {
       _equipment.unshift(saved);
     }
     _equipment.sort((a, b) => b.purchased_at.localeCompare(a.purchased_at));
+    state.equipment = [..._equipment]; // sync to shared state for P&L
     closeCogsModal();
     renderEquipment();
+    if (typeof renderDashboard === 'function') renderDashboard();
   } catch(e) { _setSavingState(false); console.error('Save equipment failed:', e); alert('Save failed: ' + (e?.message || e)); }
 }
 
@@ -511,8 +513,10 @@ async function deleteCogsEquipmentPurchase(id) {
   try {
     await dbDeleteEquipmentPurchase(id);
     _equipment = _equipment.filter(e => e.id !== id);
+    state.equipment = [..._equipment]; // sync to shared state for P&L
     closeCogsModal();
     renderEquipment();
+    if (typeof renderDashboard === 'function') renderDashboard();
   } catch(e) { console.error('Delete equipment failed:', e); alert('Delete failed: ' + (e?.message || e)); }
 }
 
@@ -720,25 +724,84 @@ async function saveCogsBatch(id) {
   try {
     _setSavingState(true);
     if (id) {
+      // ── Edit batch: adjust inventory by difference ──────────
+      const oldBatch    = _batches.find(b => b.id === id);
+      const oldSkuId    = oldBatch?.sku_id;
+      const oldBottles  = parseFloat(oldBatch?.bottles_produced) || 0;
+
       await dbUpdateBatch({ id, ...rec });
       const idx = _batches.findIndex(b => b.id === id);
       if (idx !== -1) _batches[idx] = { id, ...rec };
+
+      // Adjust inventory: if SKU changed, subtract from old + add to new
+      if (oldSkuId && oldSkuId !== skuId) {
+        const oldSku = state.skus.find(s => s.id === oldSkuId);
+        if (oldSku) {
+          oldSku.stock = Math.max(oldSku.sold, oldSku.stock - oldBottles);
+          await dbSaveSku(oldSku);
+        }
+        if (skuId) {
+          const newSku = state.skus.find(s => s.id === skuId);
+          if (newSku) {
+            newSku.stock += bottles;
+            await dbSaveSku(newSku);
+          }
+        }
+      } else if (skuId && oldBottles !== bottles) {
+        // Same SKU, different bottle count — adjust by difference
+        const sku = state.skus.find(s => s.id === skuId);
+        if (sku) {
+          sku.stock = Math.max(sku.sold, sku.stock + (bottles - oldBottles));
+          await dbSaveSku(sku);
+        }
+      }
+
     } else {
+      // ── New batch: add bottles to SKU inventory ─────────────
       const saved = await dbSaveBatch(rec);
       _batches.unshift(saved);
+
+      if (skuId) {
+        const sku = state.skus.find(s => s.id === skuId);
+        if (sku) {
+          sku.stock += bottles;
+          saveLocal();
+          await dbSaveSku(sku);
+        }
+      }
     }
+
     _batches.sort((a, b) => b.brewed_at.localeCompare(a.brewed_at));
+    state.batches = [..._batches]; // sync to shared state for P&L
+    saveLocal();
     closeCogsModal();
     renderBatches();
+    if (typeof renderInventory === 'function') renderInventory();
+    if (typeof renderDashboard === 'function') renderDashboard();
   } catch(e) { _setSavingState(false); console.error('Save batch failed:', e); alert('Save failed: ' + (e?.message || e)); }
 }
 
 async function deleteCogsBatch(id) {
   if (!confirm('Delete this batch?')) return;
   try {
+    // Subtract bottles from SKU inventory before deleting
+    const batch = _batches.find(b => b.id === id);
+    if (batch?.sku_id) {
+      const sku = state.skus.find(s => s.id === batch.sku_id);
+      if (sku) {
+        const bottlesToRemove = parseFloat(batch.bottles_produced) || 0;
+        sku.stock = Math.max(sku.sold, sku.stock - bottlesToRemove);
+        saveLocal();
+        await dbSaveSku(sku);
+      }
+    }
+
     await dbDeleteBatch(id);
     _batches = _batches.filter(b => b.id !== id);
+    state.batches = [..._batches]; // sync to shared state for P&L
     closeCogsModal();
     renderBatches();
+    if (typeof renderInventory === 'function') renderInventory();
+    if (typeof renderDashboard === 'function') renderDashboard();
   } catch(e) { console.error('Delete batch failed:', e); alert('Delete failed: ' + (e?.message || e)); }
 }

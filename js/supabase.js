@@ -154,25 +154,6 @@ async function dbDeleteOrder(id) {
   if (error) throw error;
 }
 
-// Update editable fields on a completed order (legacy — qty-only updates)
-async function dbUpdateOrder(sale) {
-  const { error } = await _supa.from('orders').update({
-    customer_name: sale.name,
-    pay_method:    sale.pay,
-    discount:      sale.discount,
-    total:         sale.total
-  }).eq('id', sale.id);
-  if (error) throw error;
-
-  // Update each line item qty in parallel
-  await Promise.all(sale.items.map(item =>
-    _supa.from('order_items')
-      .update({ qty: item.qty })
-      .eq('order_id', sale.id)
-      .eq('sku_id', item.skuId)
-  ));
-}
-
 // Full order update — handles adding, removing, and editing line items
 async function dbUpdateOrderFull(sale) {
   // Update order header
