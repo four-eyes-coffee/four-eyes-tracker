@@ -148,6 +148,8 @@ function openEditSale(id) {
   document.getElementById('sale-modal').classList.add('open');
 }
 
+// ── Edit Sale — render modal (same structure as New Sale form) ───
+
 function _renderEditSaleModal() {
   const modal = document.getElementById('sale-modal-inner');
   if (!modal) return;
@@ -159,39 +161,41 @@ function _renderEditSaleModal() {
       <span>Edit Sale</span>
       <button class="modal-close" onclick="closeSaleModal()">&#x2715;</button>
     </div>
+    <div class="sale-form">
 
-    <div class="field">
-      <label>Customer Name</label>
-      <input type="text" id="esm-name" value="${esc(_editName)}" autocomplete="off">
+      <div class="fsec">Customer</div>
+      <div class="field">
+        <input type="text" id="esm-name" value="${esc(_editName)}" placeholder="First name or handle" autocomplete="off">
+      </div>
+
+      <div class="fsec">Items</div>
+      <div class="items-list" id="esm-cart-items"></div>
+      <div class="flavor-picker" id="esm-flavor-picker"></div>
+
+      <div class="fsec">Payment</div>
+      <div class="pay-pills" id="esm-pay-pills">
+        ${payMethods.map(m =>
+          `<button class="pay-pill${_editPay === m ? ' selected' : ''}" onclick="editSelectPay('${m}', this)">${m}</button>`
+        ).join('')}
+      </div>
+
+      <div class="fsec">Bottles Returned</div>
+      <div class="discount-row">
+        <button class="ibtn" onclick="editChangeReturns(-1)" type="button">&#x2212;</button>
+        <span class="item-qty f-returns" id="esm-returns">${_editReturns}</span>
+        <button class="ibtn" onclick="editChangeReturns(1)" type="button">+</button>
+        <span class="returns-hint">&#x2212;$3 each</span>
+      </div>
+
+      <div class="order-summary">
+        <span class="ol">Total</span>
+        <span class="ov" id="esm-total">$0</span>
+      </div>
+
+      <button class="submit-btn" onclick="saveSaleEdit()">Save Changes</button>
+      <button class="modal-del"  onclick="deleteSaleFromModal()">Delete Sale</button>
+
     </div>
-
-    <div class="fsec" style="margin-top:16px;">Items</div>
-    <div id="esm-cart-items"></div>
-    <div class="fsec" style="margin-top:12px; font-size:11px; opacity:.6;">Add Flavor</div>
-    <div id="esm-flavor-picker" class="flavor-picker"></div>
-
-    <div class="fsec" style="margin-top:16px;">Payment</div>
-    <div class="pay-pills" id="esm-pay-pills">
-      ${payMethods.map(m =>
-        `<button class="pay-pill${_editPay === m ? ' selected' : ''}" onclick="editSelectPay('${m}', this)">${m}</button>`
-      ).join('')}
-    </div>
-
-    <div class="fsec" style="margin-top:16px;">Bottles Returned</div>
-    <div class="discount-row">
-      <button class="ibtn" onclick="editChangeReturns(-1)" type="button">&#x2212;</button>
-      <span class="item-qty f-returns" id="esm-returns">${_editReturns}</span>
-      <button class="ibtn" onclick="editChangeReturns(1)" type="button">+</button>
-      <span class="returns-hint">&#x2212;$3 each</span>
-    </div>
-
-    <div class="order-summary" style="margin-top:16px;">
-      <span class="ol">Total</span>
-      <span class="ov" id="esm-total">$0</span>
-    </div>
-
-    <button class="modal-save" onclick="saveSaleEdit()">Save Changes</button>
-    <button class="modal-del"  onclick="deleteSaleFromModal()">Delete Sale</button>
   `;
 
   _renderEditCartItems();
@@ -199,18 +203,18 @@ function _renderEditSaleModal() {
   _updateEditTotal();
 }
 
-// ── Edit Sale — cart items rendering ─────────────────────────────
+// ── Edit Sale — cart items (same markup as newSale renderCartItems) ─
 
 function _renderEditCartItems() {
   const list = document.getElementById('esm-cart-items');
   if (!list) return;
   if (!_editCart.length) {
-    list.innerHTML = '<div style="padding:8px 0;opacity:.4;font-size:12px;">No items — add a flavor below</div>';
+    list.innerHTML = '';
     return;
   }
   list.innerHTML = _editCart.map(item => {
     const sku = state.skus.find(s => s.id === item.skuId);
-    const displayName = sku ? sku.name : item.skuName;
+    const displayName  = sku ? sku.name : item.skuName;
     const displayPrice = item.price;
     return `<div class="item-row">
       <div class="item-row-left">
@@ -227,7 +231,7 @@ function _renderEditCartItems() {
   }).join('');
 }
 
-// ── Edit Sale — flavor picker ────────────────────────────────────
+// ── Edit Sale — flavor picker (same markup as newSale renderFlavorPicker) ─
 
 function _renderEditFlavorPicker() {
   const picker = document.getElementById('esm-flavor-picker');
@@ -236,8 +240,7 @@ function _renderEditFlavorPicker() {
   picker.innerHTML = state.skus
     .filter(s => (s.sku_type || 'production') === 'production')
     .map(sku => {
-      // Available stock = total stock minus sold, but add back the original qty
-      // for this sale (since editing — those bottles aren't "gone" yet)
+      // Available = (stock - sold) + original qty for this sale (bottles aren't "gone" yet during edit)
       const origItem = (_editOriginal?.items || []).find(i => i.skuId === sku.id);
       const origQty  = origItem ? origItem.qty : 0;
       const rem      = (sku.stock - sku.sold) + origQty;
@@ -269,7 +272,6 @@ function editChangeQty(skuId, delta) {
   const item = _editCart.find(c => c.skuId === skuId);
   if (!item) return;
   const sku      = state.skus.find(s => s.id === skuId);
-  // Max available = (stock - sold) + original qty from this sale
   const origItem = (_editOriginal?.items || []).find(i => i.skuId === skuId);
   const origQty  = origItem ? origItem.qty : 0;
   const maxAvail = sku ? (sku.stock - sku.sold) + origQty : 99;
@@ -329,7 +331,7 @@ async function saveSaleEdit() {
     if (sku) sku.sold = Math.max(0, sku.sold - item.qty);
   });
 
-  // Validate and apply new inventory counts
+  // Validate new inventory counts
   let valid = true;
   _editCart.forEach(item => {
     const sku = state.skus.find(sk => sk.id === item.skuId);
@@ -340,7 +342,7 @@ async function saveSaleEdit() {
   });
 
   if (!valid) {
-    // Re-apply original sold counts (undo revert)
+    // Undo revert — re-apply original sold counts
     (_editOriginal.items || []).forEach(item => {
       const sku = state.skus.find(sk => sk.id === item.skuId);
       if (sku) sku.sold += item.qty;
@@ -372,7 +374,6 @@ async function saveSaleEdit() {
 
   // Persist to Supabase
   try {
-    // Update sold counts for all affected SKUs
     const affectedSkuIds = new Set([
       ...(_editOriginal.items || []).map(i => i.skuId),
       ..._editCart.map(c => c.skuId)
@@ -384,7 +385,6 @@ async function saveSaleEdit() {
         : Promise.resolve();
     });
 
-    // Delete old order_items and insert new ones (handles adds/removes)
     await Promise.all([
       ...skuUpdates,
       dbUpdateOrderFull(s).catch(e => console.error('Update order failed:', e))
@@ -397,6 +397,7 @@ async function saveSaleEdit() {
   saveLocal();
   renderDashboard();
   renderHistory();
+  if (typeof renderInventory === 'function') renderInventory();
 }
 
 // Delete from inside the edit modal
@@ -410,7 +411,6 @@ async function deleteSale(id) {
   const idx = state.orders.findIndex(o => o.id === id);
   if (idx === -1) return;
 
-  // Revert sold counts + delete from Supabase in parallel
   const skuUpdates = (state.orders[idx].items || []).map(item => {
     const sku = state.skus.find(sk => sk.id === item.skuId);
     if (!sku) return Promise.resolve();
@@ -427,6 +427,7 @@ async function deleteSale(id) {
   saveLocal();
   renderDashboard();
   renderHistory();
+  if (typeof renderInventory === 'function') renderInventory();
 }
 
 function closeSaleModal() {

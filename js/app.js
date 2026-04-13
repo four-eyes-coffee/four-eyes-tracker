@@ -3,7 +3,7 @@
    Routing · shared state · utilities · PIN · boot sequence
    ============================================================ */
 
-const APP_VERSION = '20260407-v21'; // UPDATE THIS on every deploy — drives silent auto-update check
+const APP_VERSION = '20260413-v22'; // UPDATE THIS on every deploy — drives silent auto-update check
 
 // ── Shared state ──────────────────────────────────────────────────
 // Single source of truth. All modules read/write this object.
