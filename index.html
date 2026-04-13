@@ -12,7 +12,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=22">
+  <link rel="stylesheet" href="css/styles.css?v=21">
   <style>
     /* ── Drop type badges ────────────────────────────────── */
     .drop-badge {
@@ -483,7 +483,31 @@
 </div>
 
 <div class="modal-overlay" id="sale-modal">
-  <div class="modal" id="sale-modal-inner"></div>
+  <div class="modal">
+    <div class="modal-hdr">
+      <span>Edit Sale</span>
+      <button class="modal-close" onclick="closeSaleModal()">&#x2715;</button>
+    </div>
+    <input type="hidden" id="esm-id">
+    <div class="field"><label>Customer Name</label><input type="text" id="esm-name" autocomplete="off"></div>
+    <div class="field">
+      <label>Payment</label>
+      <select id="esm-pay" class="pay-select">
+        <option value="Venmo">Venmo</option>
+        <option value="Cash">Cash</option>
+        <option value="Zelle">Zelle</option>
+        <option value="Card">Card</option>
+        <option value="Gift">Gift</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Bottles Returned (&#x2212;$3 each)</label>
+      <input type="number" id="esm-discount" min="0" inputmode="numeric" placeholder="0">
+    </div>
+    <div id="esm-items-wrap"></div>
+    <button class="modal-save" onclick="saveSaleEdit()">Save Changes</button>
+    <button class="modal-del"  onclick="deleteSaleFromModal()">Delete Sale</button>
+  </div>
 </div>
 
 <div class="modal-overlay" id="pending-modal">
@@ -532,14 +556,14 @@
 </div>
 
 <!-- ── Scripts ────────────────────────────────────────────────── -->
-<script src="js/supabase.js?v=22"></script>
-<script src="js/app.js?v=22"></script>
-<script src="js/dashboard.js?v=22"></script>
-<script src="js/newSale.js?v=22"></script>
-<script src="js/history/salesLog.js?v=22"></script>
-<script src="js/storeHub/inventory.js?v=22"></script>
-<script src="js/storeHub/cogs.js?v=22"></script>
-<script src="js/storeHub/dropCodes.js?v=22"></script>
+<script src="js/supabase.js?v=21"></script>
+<script src="js/app.js?v=21"></script>
+<script src="js/dashboard.js?v=21"></script>
+<script src="js/newSale.js?v=21"></script>
+<script src="js/history/salesLog.js?v=21"></script>
+<script src="js/storeHub/inventory.js?v=21"></script>
+<script src="js/storeHub/cogs.js?v=21"></script>
+<script src="js/storeHub/dropCodes.js?v=21"></script>
 
 <script>
   // All scripts and DOM elements are loaded at this point.
