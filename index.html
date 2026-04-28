@@ -12,7 +12,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=23">
+  <link rel="stylesheet" href="css/styles.css?v=25">
   <style>
     /* ── Drop type badges ────────────────────────────────── */
     .drop-badge {
@@ -39,19 +39,7 @@
       border: 1px solid rgba(230,255,0,0.25);
     }
     /* ── Email status badges ─────────────────────────────── */
-    .success-email-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 10px;
-      font-weight: 700;
-      font-family: 'Rubik', sans-serif;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      padding: 5px 12px;
-      border-radius: 20px;
-      margin: 10px auto 4px;
-    }
+    .success-email-status,
     .status-tag {
       display: inline-flex;
       align-items: center;
@@ -61,10 +49,16 @@
       font-family: 'Rubik', sans-serif;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      padding: 4px 10px;
       border-radius: 20px;
-      margin-top: 8px;
-      margin-bottom: 14px;
+    }
+    .success-email-status {
+      gap: 6px;
+      padding: 5px 12px;
+      margin: 10px auto 4px;
+    }
+    .status-tag {
+      padding: 4px 10px;
+      margin: 8px 0 14px;
     }
     /* Sent — muted green */
     .status-tag.sent,
@@ -499,7 +493,7 @@
     </div>
     <div class="field" style="margin-top:14px;">
       <label>Payment Method</label>
-      <select id="pm-pay" class="pay-select">
+      <select id="pm-pay" class="pay-select" onchange="updatePendingTotal()">
         <option value="">Select payment...</option>
         <option value="Venmo">Venmo</option>
         <option value="Cash">Cash</option>
@@ -532,21 +526,26 @@
 </div>
 
 <!-- ── Scripts ────────────────────────────────────────────────── -->
-<script src="js/supabase.js?v=23"></script>
-<script src="js/app.js?v=23"></script>
-<script src="js/dashboard.js?v=23"></script>
-<script src="js/newSale.js?v=23"></script>
-<script src="js/history/salesLog.js?v=23"></script>
-<script src="js/storeHub/inventory.js?v=23"></script>
-<script src="js/storeHub/cogs.js?v=23"></script>
-<script src="js/storeHub/dropCodes.js?v=23"></script>
+<script src="js/supabase.js?v=25"></script>
+<script src="js/app.js?v=25"></script>
+<script src="js/dashboard.js?v=25"></script>
+<script src="js/newSale.js?v=25"></script>
+<script src="js/history/salesLog.js?v=25"></script>
+<script src="js/storeHub/inventory.js?v=25"></script>
+<script src="js/storeHub/cogs.js?v=25"></script>
+<script src="js/storeHub/dropCodes.js?v=25"></script>
 
 <script>
   // All scripts and DOM elements are loaded at this point.
   // Wire up modal backdrop dismissal in one place.
-  document.getElementById('sku-modal').addEventListener('click',     function(e) { if (e.target === this) closeSkuModal(); });
-  document.getElementById('sale-modal').addEventListener('click',    function(e) { if (e.target === this) closeSaleModal(); });
-  document.getElementById('pending-modal').addEventListener('click', function(e) { if (e.target === this) closePendingModal(); });
+  [
+    ['sku-modal',     closeSkuModal],
+    ['sale-modal',    closeSaleModal],
+    ['pending-modal', closePendingModal]
+  ].forEach(([id, close]) => {
+    const overlay = document.getElementById(id);
+    if (overlay) overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  });
 </script>
 
 </body>

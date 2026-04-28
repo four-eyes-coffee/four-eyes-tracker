@@ -14,6 +14,28 @@ let pendingModalItems = []; // mutable copy of order_items for editing
 let pendingModalReturns = 0;
 let _pendingOrders    = []; // cache — avoids re-fetch on "View & Approve"
 
+// ── Pricing helpers ───────────────────────────────────────────────
+// Single source of truth for subtotal + discount math.
+// Keeps Gift / bottle-return rules consistent across walk-up + pending flows.
+
+const RETURN_DISCOUNT = 3; // $ off per returned bottle
+
+function cartSubtotal() {
+  return cart.reduce((sum, item) => {
+    const sku = state.skus.find(s => s.id === item.skuId);
+    return sum + (sku ? sku.price * item.qty : 0);
+  }, 0);
+}
+
+function pendingSubtotal(items = pendingModalItems) {
+  return items.reduce((s, i) => s + parseFloat(i.price) * i.qty, 0);
+}
+
+function applyDiscount(pay, subtotal, returnsCount) {
+  if (pay === 'Gift') return 0;
+  return Math.max(0, subtotal - returnsCount * RETURN_DISCOUNT);
+}
+
 // ── Flavor picker + cart rendering ───────────────────────────────
 
 function renderSaleForm() {
@@ -115,15 +137,12 @@ function changeReturns(delta) {
 function updateOrderTotal() {
   const el = document.getElementById('order-total');
   if (!el) return;
-  if (formPay === 'Gift') { el.textContent = '$0'; return; }
-  const subtotal = cart.reduce((sum, item) => {
-    const sku = state.skus.find(s => s.id === item.skuId);
-    return sum + (sku ? sku.price * item.qty : 0);
-  }, 0);
-  el.textContent = fmtMoney(Math.max(0, subtotal - formReturns * 3));
+  el.textContent = fmtMoney(applyDiscount(formPay, cartSubtotal(), formReturns));
 }
 
 // ── Email status (persistent — shown on success screen + pending cards) ──
+
+const EMAIL_SENT_TAG = `<span class="status-tag sent" style="margin-bottom:12px;">✉ &nbsp;EMAIL SENT</span>`;
 
 function setSuccessEmailStatus(email) {
   const el = document.getElementById('success-email-status');
@@ -138,10 +157,7 @@ function setSuccessEmailStatus(email) {
 }
 
 function emailStatusTag(email) {
-  if (email) {
-    return `<span class="status-tag sent" style="margin-bottom:12px;">✉ &nbsp;EMAIL SENT</span>`;
-  }
-  return '';
+  return email ? EMAIL_SENT_TAG : '';
 }
 
 // ── Sale submission ───────────────────────────────────────────────
@@ -153,12 +169,9 @@ async function logSale() {
   if (!cart.length) { alert('Add at least one item.');    return; }
   if (!formPay)     { alert('Select a payment method.'); return; }
 
-  const disc     = formReturns * 3;
-  const subtotal = cart.reduce((sum, item) => {
-    const sku = state.skus.find(s => s.id === item.skuId);
-    return sum + (sku ? sku.price * item.qty : 0);
-  }, 0);
-  const total = formPay === 'Gift' ? 0 : Math.max(0, subtotal - disc);
+  const disc     = formReturns * RETURN_DISCOUNT;
+  const subtotal = cartSubtotal();
+  const total    = applyDiscount(formPay, subtotal, formReturns);
 
   // Optimistically deduct sold counts
   cart.forEach(item => {
@@ -298,9 +311,7 @@ function approveOrder(id) {
 async function rejectPendingOrder(id) {
   try {
     await dbRejectOrder(id);
-    loadPendingForNewSale();
-    state.pendingQty = await dbLoadPendingCounts();
-    renderDashboard();
+    await refreshPendingState();
   } catch(e) {
     console.error('Reject order failed:', e);
   }
@@ -411,9 +422,10 @@ function changePendingReturns(delta) {
 }
 
 function updatePendingTotal() {
-  const subtotal = pendingModalItems.reduce((s, i) => s + parseFloat(i.price) * i.qty, 0);
   const el = document.getElementById('pm-total');
-  if (el) el.textContent = fmtMoney(Math.max(0, subtotal - pendingModalReturns * 3));
+  if (!el) return;
+  const pay = document.getElementById('pm-pay')?.value || '';
+  el.textContent = fmtMoney(applyDiscount(pay, pendingSubtotal(), pendingModalReturns));
 }
 
 function closePendingModal() {
@@ -431,9 +443,9 @@ async function confirmPendingOrder() {
 
   const pay      = document.getElementById('pm-pay').value || 'Venmo';
   const o        = pendingModalOrder;
-  const discount = pendingModalReturns * 3;
-  const subtotal = activeItems.reduce((s, i) => s + parseFloat(i.price) * i.qty, 0);
-  const total    = Math.max(0, subtotal - discount);
+  const discount = pendingModalReturns * RETURN_DISCOUNT;
+  const subtotal = pendingSubtotal(activeItems);
+  const total    = applyDiscount(pay, subtotal, pendingModalReturns);
 
   // Deduct inventory optimistically
   activeItems.forEach(item => {
@@ -461,9 +473,7 @@ async function confirmPendingOrder() {
     .catch(e => console.error('Confirm pending failed:', e));
 
   closePendingModal();
-  loadPendingForNewSale();
-  state.pendingQty = await dbLoadPendingCounts();
-  renderDashboard();
+  await refreshPendingState();
   if (typeof renderHistory === 'function') renderHistory();
 }
 
@@ -472,6 +482,10 @@ async function declinePendingOrder() {
   if (!confirm('Decline this order?')) return;
   await dbRejectOrder(pendingModalOrder.id);
   closePendingModal();
+  await refreshPendingState();
+}
+
+async function refreshPendingState() {
   loadPendingForNewSale();
   state.pendingQty = await dbLoadPendingCounts();
   renderDashboard();

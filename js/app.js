@@ -3,7 +3,7 @@
    Routing · shared state · utilities · PIN · boot sequence
    ============================================================ */
 
-const APP_VERSION = '20260413-v23'; // UPDATE THIS on every deploy — drives silent auto-update check
+const APP_VERSION = '20260427-v25'; // UPDATE THIS on every deploy — drives silent auto-update check
 
 // ── Shared state ──────────────────────────────────────────────────
 // Single source of truth. All modules read/write this object.
@@ -32,32 +32,31 @@ function fmtMoney(v) {
   return '$' + (Number.isInteger(n) ? n : n.toFixed(2));
 }
 
+// Format a Date as YYYY-MM
+function monthKey(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
 // Extract YYYY-MM month key from an order object
 function getSaleMonthKey(order) {
-  if (order.createdAt) {
-    const d = new Date(order.createdAt);
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-  }
+  if (order.createdAt) return monthKey(new Date(order.createdAt));
   // Legacy fallback: local-only sale with numeric timestamp id
   if (typeof order.id === 'number' && order.id > 1_000_000_000_000) {
-    const d = new Date(order.id);
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    return monthKey(new Date(order.id));
   }
-  const n = new Date();
-  return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+  return monthKey(new Date());
 }
 
 // Current and previous month keys — shared across dashboard + history
 function currentMonthKey() {
-  const n = new Date();
-  return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+  return monthKey(new Date());
 }
 
 function prevMonthKey() {
   const d = new Date();
   d.setDate(1);
   d.setMonth(d.getMonth() - 1);
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  return monthKey(d);
 }
 
 // Format YYYY-MM key as "March 2026"
