@@ -200,7 +200,7 @@ async function logSale() {
 
   // Disable button to prevent double-submit
   const btn = document.querySelector('.submit-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  setBtnLoading(btn, 'Saving sale…');
 
   try {
     state.orders.unshift(sale);
@@ -238,7 +238,7 @@ async function logSale() {
     alert('Failed to save order. Check your connection and try again.');
 
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Log Sale'; }
+    resetBtn(btn, 'Log Sale');
   }
 }
 
@@ -447,6 +447,11 @@ async function confirmPendingOrder() {
   const subtotal = pendingSubtotal(activeItems);
   const total    = applyDiscount(pay, subtotal, pendingModalReturns);
 
+  const confirmBtn = document.querySelector('#pending-modal .modal-confirm');
+  const declineBtn = document.querySelector('#pending-modal .modal-del');
+  setBtnLoading(confirmBtn, 'Confirming sale…');
+  if (declineBtn) declineBtn.disabled = true;
+
   // Deduct inventory optimistically
   activeItems.forEach(item => {
     const sku = state.skus.find(s => s.id === item.sku_id);
@@ -468,21 +473,75 @@ async function confirmPendingOrder() {
   });
   saveLocal();
 
-  // DB trigger fires on status UPDATE → 'completed' and sends confirmation email
-  dbConfirmPendingOrder(o.id, pay, pendingModalItems, total, discount)
-    .catch(e => console.error('Confirm pending failed:', e));
+  try {
+    // Await DB so the spinner reflects real wait time. Trigger fires on
+    // status UPDATE → 'completed' and sends the confirmation email.
+    await dbConfirmPendingOrder(o.id, pay, pendingModalItems, total, discount);
 
-  closePendingModal();
-  await refreshPendingState();
-  if (typeof renderHistory === 'function') renderHistory();
+    closePendingModal();
+    await refreshPendingState();
+    if (typeof renderHistory === 'function') renderHistory();
+
+  } catch (e) {
+    console.error('Confirm pending failed:', e);
+
+    // Roll back optimistic updates
+    state.orders.shift();
+    saveLocal();
+    activeItems.forEach(item => {
+      const sku = state.skus.find(s => s.id === item.sku_id);
+      if (sku) {
+        sku.sold -= item.qty;
+        dbUpdateSkuSold(sku.id, sku.sold).catch(() => {});
+      }
+    });
+    renderDashboard();
+
+    alert('Failed to confirm order. Check your connection and try again.');
+    resetBtn(confirmBtn, '✓ Confirm Sale');
+    if (declineBtn) declineBtn.disabled = false;
+  }
 }
 
 async function declinePendingOrder() {
   if (!pendingModalOrder) return;
   if (!confirm('Decline this order?')) return;
-  await dbRejectOrder(pendingModalOrder.id);
-  closePendingModal();
-  await refreshPendingState();
+
+  const confirmBtn = document.querySelector('#pending-modal .modal-confirm');
+  const declineBtn = document.querySelector('#pending-modal .modal-del');
+  setBtnLoading(declineBtn, 'Declining…');
+  if (confirmBtn) confirmBtn.disabled = true;
+
+  try {
+    await dbRejectOrder(pendingModalOrder.id);
+    closePendingModal();
+    await refreshPendingState();
+  } catch (e) {
+    console.error('Decline order failed:', e);
+    alert('Failed to decline order. Check your connection and try again.');
+    resetBtn(declineBtn, 'Decline Order');
+    if (confirmBtn) confirmBtn.disabled = false;
+  }
+}
+
+// ── Button loading helpers ────────────────────────────────────────
+
+const SPINNER_SVG = `<svg class="btn-spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg>`;
+
+function setBtnLoading(btn, label) {
+  if (!btn) return;
+  if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.classList.add('is-loading');
+  btn.innerHTML = `${SPINNER_SVG}<span>${label}</span>`;
+}
+
+function resetBtn(btn, fallback) {
+  if (!btn) return;
+  btn.disabled = false;
+  btn.classList.remove('is-loading');
+  btn.innerHTML = btn.dataset.originalHtml || fallback;
+  delete btn.dataset.originalHtml;
 }
 
 async function refreshPendingState() {

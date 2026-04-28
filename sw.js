@@ -3,7 +3,7 @@
    UPDATE CACHE_VERSION on every deploy alongside APP_VERSION.
    ============================================================ */
 
-const CACHE_VERSION = 'fec-20260427-v25';
+const CACHE_VERSION = 'fec-20260427-v26';
 const CACHE_ASSETS  = 'fec-assets-' + CACHE_VERSION;
 
 self.addEventListener('install', () => self.skipWaiting());
